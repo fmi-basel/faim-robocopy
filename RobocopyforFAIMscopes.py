@@ -99,7 +99,7 @@ dst2Txt.set("")
 
 #timelapse = IntVar()
 #timelapse.set(0)
-timeInt = IntVar()
+timeInt = DoubleVar()
 timeInt.set(1)
 
 srcButton = Button(root, text = 'Source directory', width = 18 , overrelief=RIDGE, font = "arial 10",  command=chooseSrcDir)
@@ -172,7 +172,6 @@ if numdest!=0:
         summary += "Target1 = "+pathDst1+"\n"
     if pathDst2 != "":
         summary += "Target2 = "+pathDst2+"\n"   
-    print summary
 
 else:
     root2 = Tk()
@@ -181,33 +180,48 @@ else:
     root2.destroy()
 
 
-""" 
+"""
 ****************************************************
 Start Robocopy
 ****************************************************
-"""    
+"""
 condition = 0
 
 while (condition<2):
     if pathDst1 != "":
+        call(["robocopy", pathSrc, pathDst1, "/e", "/Z", "/r:0", "/w:30", "/COPY:DT", "/dcopy:T"])
+            
+    if pathDst2 != "":
+        call(["robocopy", pathSrc, pathDst2, "/e", "/Z", "/r:0", "/w:30", "/COPY:DT", "/dcopy:T"])
+
+    print ("Now waiting for "+str(timeInt.get())+" min before comparing folders again")
+    sleep(timeInt.get()*60)
+
+    if pathDst1 != "":
         myComp = dircmp(pathSrc, pathDst1)
+        print myComp.left_only
         if len(myComp.left_only)==0:
             print("Same content in source and destination1")
-            condition += 1
-        else:
-            call(["robocopy", pathSrc, pathDst1, "/s", "/Z", "/r:0", "/w:30", "/COPY:DT", "/dcopy:T"])
+            if pathDst2 != "":
+                condition += 1
+            else:
+                condition += 2
+            
     if pathDst2 != "":
         myComp = dircmp(pathSrc, pathDst2)
         if len(myComp.left_only)==0:
-            print("Same content in source and destination2")    
-            condition += 1
-        else:
-            call(["robocopy", pathSrc, pathDst2, "/s", "/Z", "/r:0", "/w:30", "/COPY:DT", "/dcopy:T"])
+            print("Same content in source and destination2")
+            if pathDst1 != "":
+                condition += 1
+            else:
+                condition += 2          
 
-    if condition<2:
-        print ("Now waiting for "+str(timeInt.get())+" min before copying again")
-        sleep(timeInt.get()*60)
-        condition = 0
+
+"""
+****************************************************
+Send E-mail
+****************************************************
+"""  
 
 userName = get_display_name().split(",")
 mailAdresse = userName[1][1:]+"."+userName[0]+"@fmi.ch"
