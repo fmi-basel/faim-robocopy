@@ -4,19 +4,17 @@
 
 Ceci est un script temporaire.
 """
-import ctypes
-import os
-from Tkinter import *
-import tkFileDialog
-import tkMessageBox
 
-from subprocess import call
+import ctypes, os, sys, tkMessageBox
+
 from filecmp import dircmp
+from subprocess import call
 from time import sleep
+from Tkinter import Button, Entry, Label, Tk, StringVar, DoubleVar, RIDGE, X
 
 
 # *************************************************************************************
-# get User full name
+# FUNCTION: get User full name
 # 
 # *************************************************************************************
 def get_display_name():
@@ -31,7 +29,7 @@ def get_display_name():
     return nameBuffer.value
     
 # *************************************************************************************
-# Sends a mail to the user about calculated times 
+# FUNCTION: Sends a mail to the user about calculated times 
 # 
 # *************************************************************************************
 def SendEmail(mailAdresse, mailObject, mailText):
@@ -51,7 +49,7 @@ def SendEmail(mailAdresse, mailObject, mailText):
   
 
 # *************************************************************************************
-# get Directories and quit functions
+# FUNCTION: get Directories, done and cancel functions
 # 
 # *************************************************************************************
 def chooseSrcDir():
@@ -72,8 +70,12 @@ def chooseDst2Dir():
     pathDst2 = askdirectory(initialdir=currdir, title="Please select a directory")
     dst2Txt.set(pathDst2)
 
-def quit():
+def doCopy():
     root.destroy()
+
+def cancel():
+    root.destroy()
+    sys.exit()
 
 
 pathSrc=""
@@ -81,6 +83,7 @@ pathDst1=""
 pathDst2=""
 global currdir
 currdir = os.getcwd()
+
 
 """
 ****************************************************
@@ -100,27 +103,27 @@ dst2Txt.set("")
 #timelapse = IntVar()
 #timelapse.set(0)
 timeInt = DoubleVar()
-timeInt.set(1)
+timeInt.set(0.1)
 
-srcButton = Button(root, text = 'Source directory', width = 18 , overrelief=RIDGE, font = "arial 10",  command=chooseSrcDir)
+srcButton = Button(root, text = 'Source directory', overrelief=RIDGE, font = "arial 10",  command=chooseSrcDir)
 srcButton.config(bg = "light steel blue", fg="black")
-srcButton.pack(padx = 10, pady=5, anchor="w")
+srcButton.pack(padx = 10, pady=5, fill=X)
 
 srcTxtLabel = Label(root, textvariable = srcTxt, font = "arial 10 italic")
 srcTxtLabel.config(bg = "light steel blue")
 srcTxtLabel.pack(padx = 10, anchor = "w")
 
-dst1Button = Button(root, text = 'Destination 1 directory', width = 18 , overrelief=RIDGE, font = "arial 10", command=chooseDst1Dir)
+dst1Button = Button(root, text = 'Destination 1 directory', overrelief=RIDGE, font = "arial 10", command=chooseDst1Dir)
 dst1Button.config(bg = "light steel blue", fg="black")
-dst1Button.pack(padx = 10, pady=5, anchor="w")
+dst1Button.pack(padx = 10, pady=5, fill=X)
 
 dst1TxtLabel = Label(root, textvariable = dst1Txt, font = "arial 10 italic")
 dst1TxtLabel.config(bg = "light steel blue")
 dst1TxtLabel.pack(padx = 10, anchor = "w")
 
-dst2Button = Button(root, text = 'Destination 2 directory', width = 18 , overrelief=RIDGE, font = "arial 10", command=chooseDst2Dir)
-dst2Button.pack(padx = 10, pady=5, anchor="w")
-dst2Button.config(bg = "light steel blue", fg="black", anchor="w")
+dst2Button = Button(root, text = 'Destination 2 directory', overrelief=RIDGE, font = "arial 10", command=chooseDst2Dir)
+dst2Button.config(bg = "light steel blue")
+dst2Button.pack(padx = 10, pady=5, fill=X)
 
 dst2TxtLabel = Label(root, textvariable = dst2Txt, font = "arial 10 italic")
 dst2TxtLabel.config(bg = "light steel blue")
@@ -138,9 +141,17 @@ tiText = Entry(root, textvariable = timeInt)
 tiText.config(bg = "light steel blue", fg="black")
 tiText.pack(padx = 10, anchor="w")
 
-doneButton = Button(root, text = 'Done', width = 6, overrelief=RIDGE, font = "arial 10", command = quit)
-doneButton.config(bg = "light steel blue", fg="black")
-doneButton.pack(anchor = "w", padx = 10, pady=15)
+spaceLabel = Label(root, text=" ", font = "arial 10")
+spaceLabel.config(bg = "light steel blue", fg="black")
+spaceLabel.pack(padx = 15, anchor="w")
+
+doCopyButton = Button(root, text = 'Do Copy !', width = 8, overrelief=RIDGE, font = "arial 10", command = doCopy)
+doCopyButton.config(bg = "lime green", fg="black")
+doCopyButton.pack(side = "left", padx = 10, pady=5)
+
+cancelButton = Button(root, text = 'Cancel', width = 8, overrelief=RIDGE, font = "arial 10", command = cancel)
+cancelButton.config(bg = "orange", fg="black")
+cancelButton.pack(side = "right", padx = 10, pady=5)
 
 root.config(bg="light steel blue")
 root.mainloop()
@@ -149,12 +160,15 @@ root.mainloop()
 """
 Check for missing information about source and destination folders
 """
-numdest = 1
+numdest = 0
+
 if pathSrc == "":
     root2 = Tk()
     root2.withdraw()
     tkMessageBox.showerror(title="Problem", message="You must select a source folder")
     root2.destroy()
+    sys.exit()
+    
 if (pathDst1 != "") | (pathDst2 != ""):
     numdest = 1
 if (pathDst1 != "") & (pathDst2 != ""):
@@ -172,12 +186,12 @@ if numdest!=0:
         summary += "Target1 = "+pathDst1+"\n"
     if pathDst2 != "":
         summary += "Target2 = "+pathDst2+"\n"   
-
 else:
     root2 = Tk()
     root2.withdraw()
     tkMessageBox.showerror(title="Problem", message="You must select at least one destination fodler")
     root2.destroy()
+    sys.exit()
 
 
 """
@@ -201,7 +215,7 @@ while (condition<2):
         myComp = dircmp(pathSrc, pathDst1)
         print myComp.left_only
         if len(myComp.left_only)==0:
-            print("Same content in source and destination1")
+            print("All files in source were found in destination1")
             if pathDst2 != "":
                 condition += 1
             else:
@@ -210,7 +224,7 @@ while (condition<2):
     if pathDst2 != "":
         myComp = dircmp(pathSrc, pathDst2)
         if len(myComp.left_only)==0:
-            print("Same content in source and destination2")
+            print("All files in source were found in destination2")
             if pathDst1 != "":
                 condition += 1
             else:
@@ -222,9 +236,7 @@ while (condition<2):
 Send E-mail
 ****************************************************
 """  
-
 userName = get_display_name().split(",")
 mailAdresse = userName[1][1:]+"."+userName[0]+"@fmi.ch"
-
 SendEmail(mailAdresse, "Robocopy Info", summary)
 
