@@ -15,7 +15,7 @@ from Tkinter import Button, Entry, Label, Tk, StringVar, DoubleVar, RIDGE, X
 
 # *************************************************************************************
 # FUNCTION: get User full name
-# 
+#
 # *************************************************************************************
 def get_display_name():
     GetUserNameEx = ctypes.windll.secur32.GetUserNameExW
@@ -27,10 +27,10 @@ def get_display_name():
     nameBuffer = ctypes.create_unicode_buffer(size.contents.value)
     GetUserNameEx(NameDisplay, nameBuffer, size)
     return nameBuffer.value
-    
+
 # *************************************************************************************
-# FUNCTION: Sends a mail to the user about calculated times 
-# 
+# FUNCTION: Sends a mail to the user about calculated times
+#
 # *************************************************************************************
 def SendEmail(mailAdresse, mailObject, mailText):
 	import smtplib
@@ -40,17 +40,17 @@ def SendEmail(mailAdresse, mailObject, mailText):
 		msg['Subject'] = mailObject
 		msg['From'] = "Robocopy@fmi.ch"
 		msg['To'] = mailAdresse
-	
+
 		s = smtplib.SMTP('cas.fmi.ch')
 		s.sendmail("laurent.gelman@fmi.ch", mailAdresse, msg.as_string())
 		s.quit()
 	except:
 		print("Could not send e-mail")
-  
+
 
 # *************************************************************************************
 # FUNCTION: get Directories, done and cancel functions
-# 
+#
 # *************************************************************************************
 def chooseSrcDir():
     from tkFileDialog import askdirectory
@@ -61,9 +61,9 @@ def chooseSrcDir():
 def chooseDst1Dir():
     from tkFileDialog import askdirectory
     global pathDst1
-    pathDst1 = askdirectory(initialdir=currdir, title="Please select a directory")    
+    pathDst1 = askdirectory(initialdir=currdir, title="Please select a directory")
     dst1Txt.set(pathDst1)
-    
+
 def chooseDst2Dir():
     from tkFileDialog import askdirectory
     global pathDst2
@@ -94,11 +94,11 @@ Design the Dialog window
 root = Tk()
 
 srcTxt = StringVar()
-srcTxt.set("")
+srcTxt.set(currdir)
 dst1Txt = StringVar()
-dst1Txt.set("")
+dst1Txt.set(currdir)
 dst2Txt = StringVar()
-dst2Txt.set("")
+dst2Txt.set(currdir)
 
 #timelapse = IntVar()
 #timelapse.set(0)
@@ -109,7 +109,7 @@ srcButton = Button(root, text = 'Source directory', overrelief=RIDGE, font = "ar
 srcButton.config(bg = "light steel blue", fg="black")
 srcButton.pack(padx = 10, pady=5, fill=X)
 
-srcTxtLabel = Label(root, textvariable = srcTxt, font = "arial 10 italic")
+srcTxtLabel = Label(root, textvariable = srcTxt, font = "arial 10")
 srcTxtLabel.config(bg = "light steel blue")
 srcTxtLabel.pack(padx = 10, anchor = "w")
 
@@ -117,7 +117,7 @@ dst1Button = Button(root, text = 'Destination 1 directory', overrelief=RIDGE, fo
 dst1Button.config(bg = "light steel blue", fg="black")
 dst1Button.pack(padx = 10, pady=5, fill=X)
 
-dst1TxtLabel = Label(root, textvariable = dst1Txt, font = "arial 10 italic")
+dst1TxtLabel = Label(root, textvariable = dst1Txt, font = "arial 10")
 dst1TxtLabel.config(bg = "light steel blue")
 dst1TxtLabel.pack(padx = 10, anchor = "w")
 
@@ -125,7 +125,7 @@ dst2Button = Button(root, text = 'Destination 2 directory', overrelief=RIDGE, fo
 dst2Button.config(bg = "light steel blue")
 dst2Button.pack(padx = 10, pady=5, fill=X)
 
-dst2TxtLabel = Label(root, textvariable = dst2Txt, font = "arial 10 italic")
+dst2TxtLabel = Label(root, textvariable = dst2Txt, font = "arial 10")
 dst2TxtLabel.config(bg = "light steel blue")
 dst2TxtLabel.pack(padx = 10, anchor = "w")
 
@@ -168,7 +168,7 @@ if pathSrc == "":
     tkMessageBox.showerror(title="Problem", message="You must select a source folder")
     root2.destroy()
     sys.exit()
-    
+
 if (pathDst1 != "") | (pathDst2 != ""):
     numdest = 1
 if (pathDst1 != "") & (pathDst2 != ""):
@@ -185,7 +185,7 @@ if numdest!=0:
     if pathDst1 != "":
         summary += "Target1 = "+pathDst1+"\n"
     if pathDst2 != "":
-        summary += "Target2 = "+pathDst2+"\n"   
+        summary += "Target2 = "+pathDst2+"\n"
 else:
     root2 = Tk()
     root2.withdraw()
@@ -204,7 +204,7 @@ condition = 0
 while (condition<2):
     if pathDst1 != "":
         call(["robocopy", pathSrc, pathDst1, "/e", "/Z", "/r:0", "/w:30", "/COPY:DT", "/dcopy:T"])
-            
+
     if pathDst2 != "":
         call(["robocopy", pathSrc, pathDst2, "/e", "/Z", "/r:0", "/w:30", "/COPY:DT", "/dcopy:T"])
 
@@ -220,7 +220,7 @@ while (condition<2):
                 condition += 1
             else:
                 condition += 2
-            
+
     if pathDst2 != "":
         myComp = dircmp(pathSrc, pathDst2)
         if len(myComp.left_only)==0:
@@ -228,14 +228,14 @@ while (condition<2):
             if pathDst1 != "":
                 condition += 1
             else:
-                condition += 2          
+                condition += 2
 
 
 """
 ****************************************************
 Send E-mail
 ****************************************************
-"""  
+"""
 userName = get_display_name().split(",")
 mailAdresse = userName[1][1:]+"."+userName[0]+"@fmi.ch"
 SendEmail(mailAdresse, "Robocopy Info", summary)
