@@ -216,62 +216,63 @@ summary = "Robocopy completed...\n\nSource = "+pathSrc+"\nTarget1 = "+pathDst1+"
 Start Robocopy
 ****************************************************
 """
-condition = False
-while condition == False:
-
-	# Start Thread1
-	Thread1 = threading.Thread(target=worker, args=(pathSrc, pathDst1,0))
-	Thread1.start()
-	print ("Starting copying to destination1")
-	
-	# Start second thread if pathDst2 exists
-	if pathDst2 != "":
-		if multiThread.get() == 0:
-			# wait for Thread1 to be finished before starting Thread2
-			conditionWait = False
-			while conditionWait == False:
-				if not Thread1.isAlive():
-					conditionWait = True
-				else:
-					print("Waiting for Robocopy to finish dst1 before starting dst2...")
-					sleep(10)	
-			# Start Thread2 now that Thread1 is done
-			Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2,0))
-			Thread2.start()
-		else:
-			# Start Thread2 in parallel to Thread1			
-			Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2,0))
-			Thread2.start()
-		print ("Starting copying to destination2")
-
-	# Wait for all threads to be finished before comparing folders
-	conditionWait = False
-	while conditionWait == False:
-		print ("Waiting for "+str(timeInt.get())+" min before comparing folders again")
-		sleep(timeInt.get()*60)
-		if not Thread1.isAlive():
-			if ThreadTwo == True:
-				if not Thread2.isAlive():
-					conditionWait = True
-				else:
-					print("Robocopy still active")
-			else:	
-				conditionWait = True
-		else:
-			print("Robocopy still active...")
+try:
+	condition = False
+	while condition == False:
+		# Start Thread1
+		Thread1 = threading.Thread(target=worker, args=(pathSrc, pathDst1,0))
+		Thread1.start()
+		print ("Starting copying to destination1")
 		
-	# Compare source and destination folders
-	myComp = dircmp(pathSrc, pathDst1)
-	if len(myComp.left_only)==0:
-		print("All files in source were found in destination1")
+		# Start second thread if pathDst2 exists
 		if pathDst2 != "":
-			myComp = dircmp(pathSrc, pathDst2)
-			if len(myComp.left_only)==0:
-				print("All files in source were found in destination2")
+			if multiThread.get() == 0:
+				# wait for Thread1 to be finished before starting Thread2
+				conditionWait = False
+				while conditionWait == False:
+					if not Thread1.isAlive():
+						conditionWait = True
+					else:
+						print("Waiting for Robocopy to finish dst1 before starting dst2...")
+						sleep(10)	
+				# Start Thread2 now that Thread1 is done
+				Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2,0))
+				Thread2.start()
+			else:
+				# Start Thread2 in parallel to Thread1			
+				Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2,0))
+				Thread2.start()
+			print ("Starting copying to destination2")
+	
+		# Wait for all threads to be finished before comparing folders
+		conditionWait = False
+		while conditionWait == False:
+			print ("Waiting for "+str(timeInt.get())+" min before comparing folders again")
+			sleep(timeInt.get()*60)
+			if not Thread1.isAlive():
+				if ThreadTwo == True:
+					if not Thread2.isAlive():
+						conditionWait = True
+					else:
+						print("Robocopy still active")
+				else:	
+					conditionWait = True
+			else:
+				print("Robocopy still active...")
+			
+		# Compare source and destination folders
+		myComp = dircmp(pathSrc, pathDst1)
+		if len(myComp.left_only)==0:
+			print("All files in source were found in destination1")
+			if pathDst2 != "":
+				myComp = dircmp(pathSrc, pathDst2)
+				if len(myComp.left_only)==0:
+					print("All files in source were found in destination2")
+					condition = True
+			else :
 				condition = True
-		else :
-			condition = True
-
+except:
+	summary = "An error occured, please check copied files."
 
 """
 ****************************************************
