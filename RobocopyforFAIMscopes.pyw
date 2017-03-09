@@ -92,7 +92,7 @@ Design the Dialog window
 """
 
 root = Tk()
-
+root.title("Robocopy FAIM")
 srcTxt = StringVar()
 srcTxt.set("")
 dst1Txt = StringVar()
