@@ -5,12 +5,12 @@
 Ceci est un script temporaire.
 """
 
-import ctypes, os, sys, tkMessageBox
+import ctypes, os, sys, threading, tkMessageBox
 
 from filecmp import dircmp
 from subprocess import call
 from time import sleep
-from Tkinter import Button, Entry, Label, Tk, StringVar, DoubleVar, RIDGE, X
+from Tkinter import Checkbutton, Button, Entry, Label, Tk, StringVar, DoubleVar, IntVar, RIDGE, X, LEFT
 
 
 # *************************************************************************************
@@ -77,6 +77,21 @@ def cancel():
     root.destroy()
     sys.exit()
 
+# *************************************************************************************
+# FUNCTION: Workers / Threads
+#
+# *************************************************************************************
+
+def worker(var1, var2, dummy):
+    call(["robocopy", var1, var2, "/e", "/Z", "/r:0", "/w:30", "/COPY:DT", "/dcopy:T"])
+
+"""
+****************************************************
+
+MAIN
+
+****************************************************
+"""
 
 pathSrc=""
 pathDst1=""
@@ -100,9 +115,8 @@ dst1Txt.set("")
 dst2Txt = StringVar()
 dst2Txt.set("")
 
-
-#timelapse = IntVar()
-#timelapse.set(0)
+multiThread = IntVar()
+multiThread.set(0)
 timeInt = DoubleVar()
 timeInt.set(0.1)
 
@@ -130,9 +144,9 @@ dst2TxtLabel = Label(root, textvariable = dst2Txt, font = "arial 10")
 dst2TxtLabel.config(bg = "light steel blue")
 dst2TxtLabel.pack(padx = 10, anchor = "w")
 
-#tlCheckBox = Checkbutton(root, text="Time-Lapse", variable=timelapse)
-#tlCheckBox.config(bg = "light steel blue", fg="black", justify = LEFT)
-#tlCheckBox.pack(padx = 10, pady=5, anchor="w")
+MuliTCheckBox = Checkbutton(root, text="Copy both destinations in parallel", wraplength=200, variable=multiThread)
+MuliTCheckBox.config(bg = "light steel blue", fg="black", justify = LEFT)
+MuliTCheckBox.pack(padx = 10, pady=5, anchor="w")
 
 tiLabel = Label(root, text="Time interval (min):", font = "arial 10")
 tiLabel.config(bg = "light steel blue", fg="black")
@@ -159,10 +173,11 @@ root.mainloop()
 
 
 """
+****************************************************
 Check for missing information about source and destination folders
+****************************************************
 """
-numdest = 0
-
+# exit program if no Source folder was entered
 if pathSrc == "":
     root2 = Tk()
     root2.withdraw()
@@ -170,29 +185,30 @@ if pathSrc == "":
     root2.destroy()
     sys.exit()
 
+# test number of destination entered				
+numdest = 0
 if (pathDst1 != "") | (pathDst2 != ""):
-    numdest = 1
+	numdest = 1
+	ThreadTwo = False
 if (pathDst1 != "") & (pathDst2 != ""):
-    numdest = 2
+	numdest = 2
+	ThreadTwo = True
 
-"""
-****************************************************
-Create summary
-****************************************************
-"""
-summary = "Robocopy completed...\n\n"
-if numdest!=0:
-    summary += "Source = "+pathSrc+"\nNumber of Targets = "+str(numdest)+"\n"
-    if pathDst1 != "":
-        summary += "Target1 = "+pathDst1+"\n"
-    if pathDst2 != "":
-        summary += "Target2 = "+pathDst2+"\n"
-else:
-    root2 = Tk()
-    root2.withdraw()
-    tkMessageBox.showerror(title="Problem", message="You must select at least one destination fodler")
-    root2.destroy()
-    sys.exit()
+# exit program if no destination was entered
+if numdest==0:
+	root2 = Tk()
+	root2.withdraw()
+	tkMessageBox.showerror(title="Problem", message="You must select at least one destination fodler")
+	root2.destroy()
+	sys.exit()
+	
+# If only one destination enterd, attribute it to pathDst1
+if numdest==1:
+	if pathDst1 == "":
+		pathDst1 = pathDst2
+		pathDst2 = ""
+	
+summary = "Robocopy completed...\n\nSource = "+pathSrc+"\nTarget1 = "+pathDst1+"\nTarget2 = "+pathDst2+"\n"
 
 
 """
@@ -200,36 +216,61 @@ else:
 Start Robocopy
 ****************************************************
 """
-condition = 0
+condition = False
+while condition == False:
 
-while (condition<2):
-    if pathDst1 != "":
-        call(["robocopy", pathSrc, pathDst1, "/e", "/Z", "/r:0", "/w:30", "/COPY:DT", "/dcopy:T"])
+	# Start Thread1
+	Thread1 = threading.Thread(target=worker, args=(pathSrc, pathDst1,0))
+	Thread1.start()
+	print ("Starting copying to destination1")
+	
+	# Start second thread if pathDst2 exists
+	if pathDst2 != "":
+		if multiThread.get() == 0:
+			# wait for Thread1 to be finished before starting Thread2
+			conditionWait = False
+			while conditionWait == False:
+				if not Thread1.isAlive():
+					conditionWait = True
+				else:
+					print("Waiting for Robocopy to finish dst1 before starting dst2...")
+					sleep(10)	
+			# Start Thread2 now that Thread1 is done
+			Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2,0))
+			Thread2.start()
+		else:
+			# Start Thread2 in parallel to Thread1			
+			Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2,0))
+			Thread2.start()
+		print ("Starting copying to destination2")
 
-    if pathDst2 != "":
-        call(["robocopy", pathSrc, pathDst2, "/e", "/Z", "/r:0", "/w:30", "/COPY:DT", "/dcopy:T"])
-
-    print ("Now waiting for "+str(timeInt.get())+" min before comparing folders again")
-    sleep(timeInt.get()*60)
-
-    if pathDst1 != "":
-        myComp = dircmp(pathSrc, pathDst1)
-        print myComp.left_only
-        if len(myComp.left_only)==0:
-            print("All files in source were found in destination1")
-            if pathDst2 != "":
-                condition += 1
-            else:
-                condition += 2
-
-    if pathDst2 != "":
-        myComp = dircmp(pathSrc, pathDst2)
-        if len(myComp.left_only)==0:
-            print("All files in source were found in destination2")
-            if pathDst1 != "":
-                condition += 1
-            else:
-                condition += 2
+	# Wait for all threads to be finished before comparing folders
+	conditionWait = False
+	while conditionWait == False:
+		print ("Waiting for "+str(timeInt.get())+" min before comparing folders again")
+		sleep(timeInt.get()*60)
+		if not Thread1.isAlive():
+			if ThreadTwo == True:
+				if not Thread2.isAlive():
+					conditionWait = True
+				else:
+					print("Robocopy still active")
+			else:	
+				conditionWait = True
+		else:
+			print("Robocopy still active...")
+		
+	# Compare source and destination folders
+	myComp = dircmp(pathSrc, pathDst1)
+	if len(myComp.left_only)==0:
+		print("All files in source were found in destination1")
+		if pathDst2 != "":
+			myComp = dircmp(pathSrc, pathDst2)
+			if len(myComp.left_only)==0:
+				print("All files in source were found in destination2")
+				condition = True
+		else :
+			condition = True
 
 
 """
