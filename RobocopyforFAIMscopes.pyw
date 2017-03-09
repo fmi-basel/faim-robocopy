@@ -100,6 +100,7 @@ dst1Txt.set("")
 dst2Txt = StringVar()
 dst2Txt.set("")
 
+
 #timelapse = IntVar()
 #timelapse.set(0)
 timeInt = DoubleVar()
