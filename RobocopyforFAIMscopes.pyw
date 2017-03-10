@@ -5,10 +5,9 @@
 Ceci est un script temporaire.
 """
 
-import ctypes, os, sys, threading, tkMessageBox
-
+import ctypes, datetime, os, sys, shutil, threading, tkMessageBox
+import subprocess
 from filecmp import dircmp
-from subprocess import call
 from time import sleep
 from Tkinter import Checkbutton, Button, Entry, Label, Tk, StringVar, DoubleVar, IntVar, RIDGE, X, LEFT
 
@@ -23,7 +22,6 @@ def get_display_name():
 
     size = ctypes.pointer(ctypes.c_ulong(0))
     GetUserNameEx(NameDisplay, None, size)
-
     nameBuffer = ctypes.create_unicode_buffer(size.contents.value)
     GetUserNameEx(NameDisplay, nameBuffer, size)
     return nameBuffer.value
@@ -83,7 +81,11 @@ def cancel():
 # *************************************************************************************
 
 def worker(var1, var2, dummy):
-    call(["robocopy", var1, var2, "/e", "/Z", "/r:0", "/w:30", "/COPY:DT", "/dcopy:T"])
+	subprocess.Popen(["robocopy", var1, var2, "/e", "/Z", "/r:0", "/w:30", "/COPY:DT", "/dcopy:T", "/njh", "/njs", "/ndl", "/nc", "/ns"], creationflags=subprocess.SW_HIDE, shell=True)
+
+
+
+
 
 """
 ****************************************************
@@ -92,7 +94,8 @@ MAIN
 
 ****************************************************
 """
-
+userName = get_display_name().split(",")
+mailAdresse = userName[1][1:]+"."+userName[0]+"@fmi.ch"
 pathSrc=""
 pathDst1=""
 pathDst2=""
@@ -114,11 +117,14 @@ dst1Txt = StringVar()
 dst1Txt.set("")
 dst2Txt = StringVar()
 dst2Txt.set("")
-
 multiThread = IntVar()
 multiThread.set(0)
 timeInt = DoubleVar()
 timeInt.set(0.1)
+mail = StringVar()
+mail.set(mailAdresse)
+deleteSource = IntVar()
+deleteSource.set(0)
 
 srcButton = Button(root, text = 'Source directory', overrelief=RIDGE, font = "arial 10",  command=chooseSrcDir)
 srcButton.config(bg = "light steel blue", fg="black")
@@ -144,17 +150,29 @@ dst2TxtLabel = Label(root, textvariable = dst2Txt, font = "arial 10")
 dst2TxtLabel.config(bg = "light steel blue")
 dst2TxtLabel.pack(padx = 10, anchor = "w")
 
-MuliTCheckBox = Checkbutton(root, text="Copy both destinations in parallel", wraplength=200, variable=multiThread)
-MuliTCheckBox.config(bg = "light steel blue", fg="black", justify = LEFT)
-MuliTCheckBox.pack(padx = 10, pady=5, anchor="w")
+multiCheckBox = Checkbutton(root, text="Copy both destinations in parallel", wraplength=200, variable=multiThread)
+multiCheckBox.config(bg = "light steel blue", fg="black", justify = LEFT)
+multiCheckBox.pack(padx = 10, pady=5, anchor="w")
+
+delCheckBox = Checkbutton(root, text="Delete files in source folder after copy", wraplength=200, variable=deleteSource)
+delCheckBox.config(bg = "light steel blue", fg="black", justify = LEFT)
+delCheckBox.pack(padx = 10, pady=5, anchor="w")
 
 tiLabel = Label(root, text="Time interval (min):", font = "arial 10")
 tiLabel.config(bg = "light steel blue", fg="black")
 tiLabel.pack(padx = 10, anchor="w")
 
-tiText = Entry(root, textvariable = timeInt)
+tiText = Entry(root, width=6, justify=LEFT, textvariable = timeInt)
 tiText.config(bg = "light steel blue", fg="black")
 tiText.pack(padx = 10, anchor="w")
+
+sendLabel = Label(root, text="Send Info to:", font = "arial 10")
+sendLabel.config(bg = "light steel blue", fg="black")
+sendLabel.pack(padx = 10, pady= 5, anchor="w")
+
+adresseText = Entry(root, justify=LEFT, width = 25, textvariable = mail)
+adresseText.config(bg = "light steel blue", fg="black")
+adresseText.pack(padx = 10, anchor="w")
 
 spaceLabel = Label(root, text=" ", font = "arial 10")
 spaceLabel.config(bg = "light steel blue", fg="black")
@@ -171,6 +189,7 @@ cancelButton.pack(side = "right", padx = 10, pady=5)
 root.config(bg="light steel blue")
 root.mainloop()
 
+mailAdresse = mail.get()
 
 """
 ****************************************************
@@ -209,6 +228,8 @@ if numdest==1:
 		pathDst2 = ""
 	
 summary = "Robocopy completed...\n\nSource = "+pathSrc+"\nTarget1 = "+pathDst1+"\nTarget2 = "+pathDst2+"\n"
+myTime = datetime.datetime.now()
+summary += myTime.strftime("Process started at %H:%M:%S")
 
 
 """
@@ -220,10 +241,14 @@ try:
 	condition = False
 	while condition == False:
 		# Start Thread1
-		Thread1 = threading.Thread(target=worker, args=(pathSrc, pathDst1,0))
-		Thread1.start()
-		print ("Starting copying to destination1")
-		
+		try:
+			Thread1 = threading.Thread(target=worker, args=(pathSrc, pathDst1,0))
+			Thread1.start()
+			print ("Starting copying to destination1")
+		except:
+			myTime = datetime.datetime.now()
+			summary += myTime.strftime("\nProblem with thread1 occured at %H:%M:%S")
+				
 		# Start second thread if pathDst2 exists
 		if pathDst2 != "":
 			if multiThread.get() == 0:
@@ -236,14 +261,24 @@ try:
 						print("Waiting for Robocopy to finish dst1 before starting dst2...")
 						sleep(10)	
 				# Start Thread2 now that Thread1 is done
-				Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2,0))
-				Thread2.start()
+				try:
+					Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2,0))
+					Thread2.start()
+					print ("Starting copying to destination2")
+				except:
+					myTime = datetime.datetime.now()
+					summary += myTime.strftime("\nProblem with thread1 occured at %H:%M:%S")
+					
 			else:
-				# Start Thread2 in parallel to Thread1			
-				Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2,0))
-				Thread2.start()
-			print ("Starting copying to destination2")
-	
+				# Start Thread2 in parallel to Thread1	
+				try:
+					Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2,0))
+					Thread2.start()
+					print ("Starting copying to destination2")
+				except:
+					myTime = datetime.datetime.now()
+					summary += myTime.strftime("\nProblem with thread2 occured at %H:%M:%S")
+			
 		# Wait for all threads to be finished before comparing folders
 		conditionWait = False
 		while conditionWait == False:
@@ -259,27 +294,79 @@ try:
 					conditionWait = True
 			else:
 				print("Robocopy still active...")
-			
+		
+		# Delete files in source folder
+		if deleteSource.get():
+			# TODO: add a check if path exists and then subloop with try
+			try:
+				myComp = dircmp(pathSrc, pathDst1)
+				for toDelete in myComp.common:
+					path = os.path.join(pathSrc, toDelete)
+					if os.path.isfile(path):
+						os.remove(path)
+					else:
+						shutil.rmtree(path, ignore_errors=True)
+			except:
+				myTime = datetime.datetime.now()
+				summary += myTime.strftime("\nProblem with deleting files occured at %H:%M:%S\n")	
+
 		# Compare source and destination folders
-		myComp = dircmp(pathSrc, pathDst1)
-		if len(myComp.left_only)==0:
-			print("All files in source were found in destination1")
-			if pathDst2 != "":
+		# Starts by checking if dst1 still connected and then compare content of folders
+		if os.path.exists(pathDst1):
+			myComp = dircmp(pathSrc, pathDst1)
+			if len(myComp.left_only)==0:
+				print("All files in source were found in destination1")
+				# Continues with dst2 if it exists
+				if pathDst2 != "":
+					if os.path.exists(pathDst2):
+						myComp = dircmp(pathSrc, pathDst2)
+						if len(myComp.left_only)==0:
+							print("All files in source were found in destination2")
+							# Everything went fine both for dst1 and dst2 and there was no change during time lapse indicated
+							condition = True
+					else:
+						myTime = datetime.datetime.now()
+						message = myTime.strftime("\nProblem with comparing files in dst2 occured at %H:%M:%S\nCould not find dst2 folder")
+						summary += message
+						# Everything went fine for dst1, dst2 seems not available anymore
+						condition = True
+				else :
+					# Everything went fine dst1 (no dst2 had been entered by user) and there was no change during time lapse indicated
+					condition = True
+		elif pathDst2 != "":
+			myTime = datetime.datetime.now()
+			message = myTime.strftime("\nProblem with comparing files in dst1 occured at %H:%M:%S\nCould not find dst1 folder\nChecking now dst2\n")
+			summary += message
+			SendEmail(mailAdresse, "Robocopy Info: ERROR", message)
+			if os.path.exists(pathDst2):
 				myComp = dircmp(pathSrc, pathDst2)
 				if len(myComp.left_only)==0:
 					print("All files in source were found in destination2")
+					# dst1 could not be found anymore, but there is a copy on dst2 and no change during time lapse indicated
 					condition = True
 			else :
+				myTime = datetime.datetime.now()
+				summary += myTime.strftime("\nProblem with comparing files in dst2 occured at %H:%M:%S\nCould not find dst2 either\n")
+				SendEmail(mailAdresse, "Robocopy Info: ERROR", summary)
+				# Both destinations are not available anymore
 				condition = True
+		else:
+			summary += myTime.strftime("\nProblem with comparing files in dst1 occured at %H:%M:%S\nCould not find dst1 folder")
+			# dst1 is not available anymore, no dst2 had been entered
+			condition = True
+
+		
 except:
-	summary = "An error occured, please check copied files."
+	summary += "\nAn error occured.\n"
+	
+	
 
 """
 ****************************************************
-Send E-mail
+Send E-mail at END
 ****************************************************
 """
-userName = get_display_name().split(",")
-mailAdresse = userName[1][1:]+"."+userName[0]+"@fmi.ch"
+myTime = datetime.datetime.now()
+summary += myTime.strftime("\nProcess finished at%H:%M:%S\n")
 SendEmail(mailAdresse, "Robocopy Info", summary)
 
