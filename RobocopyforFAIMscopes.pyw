@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Éditeur de Spyder
-
-Ceci est un script temporaire.
-"""
 
 import ctypes, datetime, os, sys, shutil, threading, tkMessageBox
 import subprocess
@@ -367,6 +362,6 @@ Send E-mail at END
 ****************************************************
 """
 myTime = datetime.datetime.now()
-summary += myTime.strftime("\nProcess finished at%H:%M:%S\n")
+summary += myTime.strftime("\nProcess finished at %H:%M:%S\n")
 SendEmail(mailAdresse, "Robocopy Info", summary)
 
