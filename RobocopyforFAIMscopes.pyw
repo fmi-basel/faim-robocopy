@@ -76,7 +76,7 @@ def cancel():
 # *************************************************************************************
 
 def worker(var1, var2, dummy):
-	subprocess.Popen(["robocopy", var1, var2, "/e", "/Z", "/r:0", "/w:30", "/COPY:DT", "/dcopy:T", "/njh", "/njs", "/ndl", "/nc", "/ns"], creationflags=subprocess.SW_HIDE, shell=True)
+	subprocess.Popen(["robocopy", var1, var2, "/e", "/Z", "/r:0", "/w:30", "/COPY:DT", "/dcopy:T"], creationflags=subprocess.SW_HIDE, shell=True)
 
 
 
@@ -278,7 +278,7 @@ try:
 		conditionWait = False
 		while conditionWait == False:
 			print ("Waiting for "+str(timeInt.get())+" min before comparing folders again")
-			sleep(timeInt.get()*60)
+			sleep(int(timeInt.get()*60))
 			if not Thread1.isAlive():
 				if ThreadTwo == True:
 					if not Thread2.isAlive():
