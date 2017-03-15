@@ -64,7 +64,20 @@ def chooseDst2Dir():
     dst2Txt.set(pathDst2)
 
 def doCopy():
-    root.destroy()
+	# Checks that a source folder has been selected
+	if pathSrc == "":
+	    root2 = Tk()
+	    root2.withdraw()
+	    tkMessageBox.showerror(title="Problem", message="You must select a source folder")
+	    root2.destroy()
+	# Checks that at least one destination folder has been selected				
+	elif (pathDst1 == "") & (pathDst2 == ""):
+		root2 = Tk()
+		root2.withdraw()
+		tkMessageBox.showerror(title="Problem", message="You must select at least one destination folder")
+		root2.destroy()
+	else:
+	    root.destroy()
 
 def cancel():
     root.destroy()
@@ -174,16 +187,9 @@ cancelButton.pack(side = "right", padx = 10, pady=5)
 root.config(bg="light steel blue")
 root.mainloop()
 
+
 # Retireive e-mail adresse
 mailAdresse = mail.get()
-
-# exit program if no Source folder was entered
-if pathSrc == "":
-    root2 = Tk()
-    root2.withdraw()
-    tkMessageBox.showerror(title="Problem", message="You must select a source folder")
-    root2.destroy()
-    sys.exit()
 
 # test number of destination entered				
 numdest = 0
@@ -194,30 +200,18 @@ if (pathDst1 != "") & (pathDst2 != ""):
 	numdest = 2
 	ThreadTwo = True
 
-# exit program if no destination was entered
-if numdest==0:
-	root2 = Tk()
-	root2.withdraw()
-	tkMessageBox.showerror(title="Problem", message="You must select at least one destination fodler")
-	root2.destroy()
-	sys.exit()
-	
 # If only one destination enterd, attribute it to pathDst1
 if numdest==1:
 	if pathDst1 == "":
 		pathDst1 = pathDst2
 		pathDst2 = ""
-	
+
+# Initialize the summary report
 summary = "Robocopy completed...\n\nSource = "+pathSrc+"\nTarget1 = "+pathDst1+"\nTarget2 = "+pathDst2+"\n"
 myTime = datetime.datetime.now()
 summary += myTime.strftime("Process started at %H:%M:%S")
 
-
-"""
-****************************************************
-Start Robocopy
-****************************************************
-"""
+# Starts the copy with Robocopy
 try:
 	condition = False
 	while condition == False:
