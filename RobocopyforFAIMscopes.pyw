@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import ctypes, datetime, os, sys, shutil, threading, tkMessageBox
+import ctypes, datetime, os, re, sys, shutil, threading, tkMessageBox
 import subprocess
 from filecmp import dircmp
 from time import sleep
@@ -21,10 +21,8 @@ def get_display_name():
     GetUserNameEx(NameDisplay, nameBuffer, size)
     return nameBuffer.value
 
-# *************************************************************************************
+
 # FUNCTION: Sends a mail to the user about calculated times
-#
-# *************************************************************************************
 def SendEmail(mailAdresse, mailObject, mailText):
 	import smtplib
 	from email.mime.text import MIMEText
@@ -41,10 +39,7 @@ def SendEmail(mailAdresse, mailObject, mailText):
 		print("Could not send e-mail")
 
 
-# *************************************************************************************
-# FUNCTION: get Directories, done and cancel functions
-#
-# *************************************************************************************
+# FUNCTIONs: get Directories, done and cancel functions
 def chooseSrcDir():
     from tkFileDialog import askdirectory
     global pathSrc
@@ -78,30 +73,35 @@ def doCopy():
 		root2.destroy()
 	else:
 	    root.destroy()
-
+		
 def cancel():
     root.destroy()
     sys.exit()
 
-# *************************************************************************************
-# FUNCTION: Workers / Threads
-#
-# *************************************************************************************
 
+# FUNCTION: Workers / Threads
 def worker(var1, var2, dummy):
 	subprocess.Popen(["robocopy", var1, var2, "/e", "/Z", "/r:0", "/w:30", "/COPY:DT", "/dcopy:T"], creationflags=subprocess.SW_HIDE, shell=True)
 
 
+# FUNCTION compare subdirectories (NOT USED IN THIS VERSION OF MACRO)
+def compsubfolders(source, destination):
+	condition = True
+	for root, directories, files in os.walk(source):
+		for myDir in directories:
+			path1 = os.path.join(root, myDir)
+			path2 = re.sub(source, destination, path1)
+			myComp = dircmp(path1, path2)
+			if len(myComp.left_only)!=0:
+				condition = False
+				break
+	return condition
+				
 
 
-
-"""
-****************************************************
-
-MAIN
-
-****************************************************
-"""
+# ****************************************************************************************************
+# MAIN
+# ****************************************************************************************************
 
 # Initialize parameters
 userName = get_display_name().split(",")
@@ -112,10 +112,8 @@ pathDst2=""
 global currdir
 currdir = os.getcwd()
 
-# ****************************************************
-# Dialog window
-# ****************************************************
 
+# Dialog window
 root = Tk()
 root.title("Robocopy FAIM")
 srcTxt = StringVar()
@@ -272,7 +270,7 @@ try:
 		
 		# Delete files in source folder
 		if deleteSource.get():
-			# TODO: add a check if path exists and then subloop with try
+			# If pathDst1 is not connected, no deletion accurs.
 			try:
 				myComp = dircmp(pathSrc, pathDst1)
 				for toDelete in myComp.common:
@@ -286,6 +284,8 @@ try:
 				summary += myTime.strftime("\nProblem with deleting files occured at %H:%M:%S\n")	
 
 		# Compare source and destination folders
+		# If no new file or folder was created since the beginning of the robocopy, then the condition is true and loop is terminated (= exit)
+		#
 		# Starts by checking if dst1 still connected and then compare content of folders
 		if os.path.exists(pathDst1):
 			myComp = dircmp(pathSrc, pathDst1)
@@ -306,7 +306,7 @@ try:
 						# Everything went fine for dst1, dst2 seems not available anymore
 						condition = True
 				else :
-					# Everything went fine dst1 (no dst2 had been entered by user) and there was no change during time lapse indicated
+					# Everything went fine for dst1 (no dst2 had been entered by user) and there was no change during time lapse indicated
 					condition = True
 		elif pathDst2 != "":
 			myTime = datetime.datetime.now()
@@ -327,20 +327,16 @@ try:
 				condition = True
 		else:
 			summary += myTime.strftime("\nProblem with comparing files in dst1 occured at %H:%M:%S\nCould not find dst1 folder")
+			summary += "Robocopy process aborted"
 			# dst1 is not available anymore, no dst2 had been entered
 			condition = True
 
-		
+# Something went wrong at some unidentified step		
 except:
 	summary += "\nAn error occured.\n"
-	
-	
 
-"""
-****************************************************
-Send E-mail at END
-****************************************************
-"""
+
+# Send E-mail at the end with the summary
 myTime = datetime.datetime.now()
 summary += myTime.strftime("\nProcess finished at %H:%M:%S\n")
 SendEmail(mailAdresse, "Robocopy Info", summary)
