@@ -6,7 +6,6 @@ from filecmp import dircmp
 from time import sleep
 from Tkinter import Checkbutton, Button, Entry, Label, Tk, StringVar, DoubleVar, IntVar, RIDGE, X, LEFT
 
-
 # *************************************************************************************
 # FUNCTION: get User full name
 #
@@ -86,7 +85,7 @@ def worker(var1, var2, silent, dummy):
 	else:
 		subprocess.call(["robocopy", var1, var2, "/e", "/Z", "/r:0", "/w:30", "/COPY:DT", "/dcopy:T"])
 
-# FUNCTION compare subdirectories (NOT USED IN THIS VERSION OF MACRO)
+# FUNCTION compare subdirectories
 def compsubfolders(source, destination):
 	condition = True
 	for root, directories, files in os.walk(source):
@@ -101,7 +100,11 @@ def compsubfolders(source, destination):
 				condition = False
 	return condition
 				
-
+# FUNCTION TO DO: update summary and write logfile
+# NB: Logfile name should be logfile path = user desktop
+def writeLogFile(summary, logfileName):
+	pass
+	
 
 # ****************************************************************************************************
 # MAIN
@@ -122,7 +125,6 @@ pathDst1=""
 pathDst2=""
 global currdir
 currdir = os.getcwd()
-
 
 # Dialog window
 root = Tk()
@@ -221,12 +223,16 @@ if numdest==1:
 		pathDst2 = ""
 
 # Initialize the summary report
-summary = "Robocopy completed...\n\nSource = "+pathSrc+"\nTarget1 = "+pathDst1+"\nTarget2 = "+pathDst2+"\n"
+summary = "Robocopy completed...\n\nSource = "+pathSrc+"\n<p>Target1 = "+pathDst1+"\n<p>Target2 = "+pathDst2+"\n<p>"
 myTime = datetime.datetime.now()
-summary += myTime.strftime("\nProcess started at %H:%M:%S")
+summary += myTime.strftime("\n<p>Process started at %H:%M:%S")
+logfileName = r"\\argon\lgelman\Desktop\Robocopy Logile.html"
 
 # Starts the copy with Robocopy
 try:
+	logfile = open(logfileName, 'w')
+	logfile.write(summary)
+	logfile.close()
 	condition = False
 	while condition == False:
 		# Start Thread1
@@ -234,9 +240,12 @@ try:
 			Thread1 = threading.Thread(target=worker, args=(pathSrc, pathDst1, silentThread.get(), 0))
 			Thread1.start()
 			print ("Starting copying to destination1")
+			myTime = datetime.datetime.now()
+			summary += myTime.strftime("\n<p>Thread 1 running at %H:%M:%S")
+			
 		except:
 			myTime = datetime.datetime.now()
-			summary += myTime.strftime("\nProblem with thread1 occured at %H:%M:%S")
+			summary += myTime.strftime("\n<p>Problem with thread1 occured at %H:%M:%S")
 				
 		# Start second thread if pathDst2 exists
 		if pathDst2 != "":
@@ -254,9 +263,11 @@ try:
 					Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2, silentThread.get(),0))
 					Thread2.start()
 					print ("Starting copying to destination2")
+					myTime = datetime.datetime.now()
+					summary += myTime.strftime("\n<p>Thread 2 running at %H:%M:%S")
 				except:
 					myTime = datetime.datetime.now()
-					summary += myTime.strftime("\nProblem with thread1 occured at %H:%M:%S")
+					summary += myTime.strftime("\n<p>Problem with thread1 occured at %H:%M:%S")
 					
 			else:
 				# Start Thread2 in parallel to Thread1	
@@ -264,9 +275,11 @@ try:
 					Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2, silentThread.get(),0))
 					Thread2.start()
 					print ("Starting copying to destination2")
+					myTime = datetime.datetime.now()
+					summary += myTime.strftime("\n<p>Thread 2 running at %H:%M:%S")
 				except:
 					myTime = datetime.datetime.now()
-					summary += myTime.strftime("\nProblem with thread2 occured at %H:%M:%S")
+					summary += myTime.strftime("\n<p>Problem with thread2 occured at %H:%M:%S")
 			
 		# Wait for all threads to be finished before comparing folders
 		conditionWait = False
@@ -297,7 +310,7 @@ try:
 							os.remove(path1)
 			except:
 				myTime = datetime.datetime.now()
-				summary += myTime.strftime("\nProblem with deleting files occured at %H:%M:%S\n")
+				summary += myTime.strftime("\n<p>Problem with deleting files occured at %H:%M:%S\n")
 			# 	
 			# Now empty folders are deleted...	
 			emptyFolders = []
@@ -310,7 +323,7 @@ try:
 						shutil.rmtree(emptyFolder)
 			except:
 				myTime = datetime.datetime.now()
-				summary += myTime.strftime("\nProblem with deleting folders occured at %H:%M:%S\n")				
+				summary += myTime.strftime("\n<p>Problem with deleting folders occured at %H:%M:%S\n")				
 				
 
 		# Compare source and destination folders to determine whether process should be stopped (i.e. no new file created in Source folder)
@@ -331,7 +344,7 @@ try:
 							condition = True
 					else:
 						myTime = datetime.datetime.now()
-						message = myTime.strftime("\nProblem with comparing files in dst2 occured at %H:%M:%S\nCould not find dst2 folder")
+						message = myTime.strftime("\n<p>Problem with comparing files in dst2 occured at %H:%M:%S\nCould not find dst2 folder")
 						summary += message
 						# Everything went fine for dst1, dst2 seems not available anymore
 						condition = True
@@ -340,7 +353,7 @@ try:
 					condition = True
 		elif pathDst2 != "":
 			myTime = datetime.datetime.now()
-			message = myTime.strftime("\nProblem with comparing files in dst1 occured at %H:%M:%S\nCould not find dst1 folder\nChecking now dst2\n")
+			message = myTime.strftime("\n<p>Problem with comparing files in dst1 occured at %H:%M:%S\nCould not find dst1 folder\nChecking now dst2\n")
 			summary += message
 			SendEmail(mailAdresse, "Robocopy Info: ERROR", message)
 			if os.path.exists(pathDst2):
@@ -351,19 +364,19 @@ try:
 					condition = True
 			else :
 				myTime = datetime.datetime.now()
-				summary += myTime.strftime("\nProblem with comparing files in dst2 occured at %H:%M:%S\nCould not find dst2 either\n")
+				summary += myTime.strftime("\n<p>Problem with comparing files in dst2 occured at %H:%M:%S\nCould not find dst2 either\n")
 				SendEmail(mailAdresse, "Robocopy Info: ERROR", summary)
 				# Both destinations are not available anymore
 				condition = True
 		else:
-			summary += myTime.strftime("\nProblem with comparing files in dst1 occured at %H:%M:%S\nCould not find dst1 folder")
+			summary += myTime.strftime("\n<p>Problem with comparing files in dst1 occured at %H:%M:%S\nCould not find dst1 folder")
 			summary += "Robocopy process aborted"
 			# dst1 is not available anymore, no dst2 had been entered
 			condition = True
 
 # Something went wrong at some unidentified step		
 except:
-	summary += "\nAn error occured.\n"
+	summary += "\n<p>An error occured.\n"
 
 print ("Copying from source to destination(s) finished, now copying from dst1 to dst2")
 
@@ -376,32 +389,41 @@ if sameContent==False:
 		print ("Starting copying from destination 1 to destination 2")
 	except:
 		myTime = datetime.datetime.now()
-		summary += myTime.strftime("\nProblem with thread3 (dst1 to dst2) occured at %H:%M:%S")
+		summary += myTime.strftime("\n<p>Problem with thread3 (dst1 to dst2) occured at %H:%M:%S")
 
 # count number of files in each folder
 try:
 	nbFiles = sum([len(files) for r, d, files in os.walk(pathSrc)])
-	summary += "\nNumber of files in source = "+str(nbFiles)
+	summary += "\n\n<p>Number of files in source = "+str(nbFiles)
 except:
-	summary += "\nNumber of files in source could not be checked"
+	summary += "\n<p>Number of files in source could not be checked"
 	
 try:
 	nbFiles = sum([len(files) for r, d, files in os.walk(pathDst1)])
-	summary += "\nNumber of files in source = "+str(nbFiles)
+	summary += "\n<p>Number of files in source = "+str(nbFiles)
 except:
-	summary += "\nNumber of files in Destination 1 could not be checked"
+	summary += "\n<p>Number of files in Destination 1 could not be checked"
 	
 if pathDst2 != "":
 	try:
 		nbFiles = sum([len(files) for r, d, files in os.walk(pathDst2)])
-		summary += "\nNumber of files in source = "+str(nbFiles)
+		summary += "\n<p>Number of files in source = "+str(nbFiles)
 	except:
-		summary += "\nNumber of files in Destination 2 could not be checked"
+		summary += "\n<p>Number of files in Destination 2 could not be checked"
 					
-# Send E-mail at the end with the summary
+
 myTime = datetime.datetime.now()
-summary += myTime.strftime("\nProcess finished at %H:%M:%S\n")
+summary += myTime.strftime("\n<p>Process finished at %H:%M:%S\n")
+
+logfile = open(logfileName, 'w')
+logfile.write(summary)
+logfile.close()
+
+# Send E-mail at the end with the summary
+summary = re.sub("<p>", "", summary)
 SendEmail(mailAdresse, "Robocopy Info", summary)
+
+
 
 print (summary)
 
