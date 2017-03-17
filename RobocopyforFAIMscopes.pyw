@@ -207,7 +207,7 @@ if numdest==1:
 # Initialize the summary report
 summary = "Robocopy completed...\n\nSource = "+pathSrc+"\nTarget1 = "+pathDst1+"\nTarget2 = "+pathDst2+"\n"
 myTime = datetime.datetime.now()
-summary += myTime.strftime("Process started at %H:%M:%S")
+summary += myTime.strftime("\nProcess started at %H:%M:%S")
 
 # Starts the copy with Robocopy
 try:
@@ -270,20 +270,33 @@ try:
 		
 		# Delete files in source folder
 		if deleteSource.get():
-			# If pathDst1 is not connected, no deletion accurs.
+			# NB: If pathDst1 is not connected, no deletion accurs.
+			# The script deletes first each file one by one and then goes once more through folders
 			try:
-				myComp = dircmp(pathSrc, pathDst1)
-				for toDelete in myComp.common:
-					path = os.path.join(pathSrc, toDelete)
-					if os.path.isfile(path):
-						os.remove(path)
-					else:
-						shutil.rmtree(path, ignore_errors=True)
+				for root, directories, files in os.walk(pathSrc):
+					for myFile in files:
+						path1 = os.path.join(root, myFile)
+						path2 = re.sub(pathSrc, pathDst1, path1)
+						if os.path.isfile(path2):
+							os.remove(path1)
 			except:
 				myTime = datetime.datetime.now()
-				summary += myTime.strftime("\nProblem with deleting files occured at %H:%M:%S\n")	
+				summary += myTime.strftime("\nProblem with deleting files occured at %H:%M:%S\n")
+			# Now empty folders are deleted...	
+			emptyFolders = []
+			try:
+				for root, directories, files in os.walk(pathSrc):
+					emptyFolders.append(root)
+				emptyFolders.sort(reverse = True)
+				for emptyFolder in emptyFolders[:-1]:
+					if os.listdir(emptyFolder) == []:
+						shutil.rmtree(emptyFolder)
+			except:
+				myTime = datetime.datetime.now()
+				summary += myTime.strftime("\nProblem with deleting folders occured at %H:%M:%S\n")				
+				
 
-		# Compare source and destination folders
+		# Compare source and destination folders to determine whether process should be stopped (i.e. no new file created in Source folder)
 		# If no new file or folder was created since the beginning of the robocopy, then the condition is true and loop is terminated (= exit)
 		#
 		# Starts by checking if dst1 still connected and then compare content of folders
@@ -335,7 +348,15 @@ try:
 except:
 	summary += "\nAn error occured.\n"
 
-
+# Copying dst1 to dst2, as dst1 should be local and less error prone and dst2 might miss some files.
+try:
+	Thread3 = threading.Thread(target=worker, args=(pathDst1, pathDst2,0))
+	Thread3.start()
+	print ("Starting copying to destination 1 to destination2")
+except:
+	myTime = datetime.datetime.now()
+	summary += myTime.strftime("\nProblem with thread3 (dst1 to dst2) occured at %H:%M:%S")
+					
 # Send E-mail at the end with the summary
 myTime = datetime.datetime.now()
 summary += myTime.strftime("\nProcess finished at %H:%M:%S\n")
