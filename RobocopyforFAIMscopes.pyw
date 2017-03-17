@@ -103,9 +103,16 @@ def compsubfolders(source, destination):
 # MAIN
 # ****************************************************************************************************
 
-# Initialize parameters
-userName = get_display_name().split(",")
-mailAdresse = userName[1][1:]+"."+userName[0]+"@fmi.ch"
+# Initialize parameters:
+
+# Generates mail adresse
+try:
+	userName = get_display_name().split(",")
+	mailAdresse = userName[1][1:]+"."+userName[0]+"@fmi.ch"
+except:
+	mailAdresse = "FirstName.LastName@fmi.ch"
+
+# Set paths to empty
 pathSrc=""
 pathDst1=""
 pathDst2=""
@@ -282,6 +289,7 @@ try:
 			except:
 				myTime = datetime.datetime.now()
 				summary += myTime.strftime("\nProblem with deleting files occured at %H:%M:%S\n")
+			# 	
 			# Now empty folders are deleted...	
 			emptyFolders = []
 			try:
@@ -352,7 +360,7 @@ except:
 try:
 	Thread3 = threading.Thread(target=worker, args=(pathDst1, pathDst2,0))
 	Thread3.start()
-	print ("Starting copying to destination 1 to destination2")
+	print ("Starting copying from destination 1 to destination 2")
 except:
 	myTime = datetime.datetime.now()
 	summary += myTime.strftime("\nProblem with thread3 (dst1 to dst2) occured at %H:%M:%S")
