@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import ctypes, datetime, os, re, sys, shutil, threading, tkMessageBox
+import ctypes, datetime, getpass, os, re, sys, shutil, threading, tkMessageBox
 import subprocess
 from filecmp import dircmp
 from time import sleep
@@ -226,7 +226,8 @@ if numdest==1:
 summary = "Robocopy completed...\n\nSource = "+pathSrc+"\n<p>Target1 = "+pathDst1+"\n<p>Target2 = "+pathDst2+"\n<p>"
 myTime = datetime.datetime.now()
 summary += myTime.strftime("\n<p>Process started at %H:%M:%S")
-logfileName = r"\\argon\lgelman\Desktop\Robocopy Logile.html"
+time = myTime.strftime("%H-%M-%S")
+logfileName = r"\\argon\\"+ getpass.getuser() + r"\\Desktop\\Robocopy Logile_Started at "+time+".html"
 
 # Starts the copy with Robocopy
 try:
