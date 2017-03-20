@@ -35,7 +35,7 @@ def SendEmail(mailAdresse, mailObject, mailText):
 		s.sendmail("laurent.gelman@fmi.ch", mailAdresse, msg.as_string())
 		s.quit()
 	except:
-		print("Could not send e-mail")
+		editSummary("\n<p>%H:%M:%S: Could not send e-mail")
 
 
 # FUNCTIONs: get Directories, done and cancel functions
@@ -104,8 +104,13 @@ def compsubfolders(source, destination):
 # NB: Logfile name should be logfile path = user desktop
 def writeLogFile(summary, logfileName):
 	pass
-	
 
+# FUNCTION Edit summary
+def editSummary(text):
+	global summary
+	myTime = datetime.datetime.now()
+	summary += myTime.strftime(text)
+	
 # ****************************************************************************************************
 # MAIN
 # ****************************************************************************************************
@@ -224,10 +229,8 @@ if numdest==1:
 
 # Initialize the summary report
 summary = "Robocopy completed...\n\nSource = "+pathSrc+"\n<p>Target1 = "+pathDst1+"\n<p>Target2 = "+pathDst2+"\n<p>"
-myTime = datetime.datetime.now()
-summary += myTime.strftime("\n<p>Process started at %H:%M:%S")
-time = myTime.strftime("%H-%M-%S")
-logfileName = r"\\argon\\"+ getpass.getuser() + r"\\Desktop\\Robocopy Logile_Started at "+time+".html"
+editSummary("\n<p>%H:%M:%S: Process started") 
+logfileName = r"\\argon\\" + getpass.getuser() + r"\\Desktop\\Robocopy Logile_Started at " + datetime.datetime.now().strftime("%H-%M-%S") + ".html"
 
 # Starts the copy with Robocopy
 try:
@@ -240,13 +243,11 @@ try:
 		try:
 			Thread1 = threading.Thread(target=worker, args=(pathSrc, pathDst1, silentThread.get(), 0))
 			Thread1.start()
-			print ("Starting copying to destination1")
-			myTime = datetime.datetime.now()
-			summary += myTime.strftime("\n<p>Thread 1 running at %H:%M:%S")
+			editSummary("\n<p>%H:%M:%S: Starting copying to destination 1")
+			editSummary("\n<p>%H:%M:%S:     Thread 1 running...")
 			
 		except:
-			myTime = datetime.datetime.now()
-			summary += myTime.strftime("\n<p>Problem with thread1 occured at %H:%M:%S")
+			editSummary("\n<p>%H:%M:%S: Problem with thread 1")
 				
 		# Start second thread if pathDst2 exists
 		if pathDst2 != "":
@@ -257,46 +258,42 @@ try:
 					if not Thread1.isAlive():
 						conditionWait = True
 					else:
-						print("Waiting for Robocopy to finish dst1 before starting dst2...")
+						editSummary("\n<p>%H:%M:%S:     Waiting for Robocopy to finish dst1 before starting dst2...")
 						sleep(10)	
 				# Start Thread2 now that Thread1 is done
 				try:
 					Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2, silentThread.get(),0))
 					Thread2.start()
-					print ("Starting copying to destination2")
-					myTime = datetime.datetime.now()
-					summary += myTime.strftime("\n<p>Thread 2 running at %H:%M:%S")
+					editSummary("\n<p>%H:%M:%S: Starting copying to destination 2")
+					editSummary("\n<p>%H:%M:%S:     Thread 2 running...")
 				except:
-					myTime = datetime.datetime.now()
-					summary += myTime.strftime("\n<p>Problem with thread1 occured at %H:%M:%S")
+					editSummary("\n<p>%H:%M:%S: Problem with thread 1")
 					
 			else:
 				# Start Thread2 in parallel to Thread1	
 				try:
 					Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2, silentThread.get(),0))
 					Thread2.start()
-					print ("Starting copying to destination2")
-					myTime = datetime.datetime.now()
-					summary += myTime.strftime("\n<p>Thread 2 running at %H:%M:%S")
+					editSummary("\n<p>%H:%M:%S: Starting copying to destination2")
+					editSummary("\n<p>%H:%M:%S:     Thread 2 running")
 				except:
-					myTime = datetime.datetime.now()
-					summary += myTime.strftime("\n<p>Problem with thread2 occured at %H:%M:%S")
+					editSummary("\n<p>%H:%M:%S: Problem with thread 2")
 			
 		# Wait for all threads to be finished before comparing folders
 		conditionWait = False
 		while conditionWait == False:
-			print ("Waiting for "+str(timeInt.get())+" min before comparing folders again")
+			editSummary("\n<p>%H:%M:%S: Waiting for "+str(timeInt.get())+" min before comparing folders again")
 			sleep(int(timeInt.get()*60))
 			if not Thread1.isAlive():
 				if ThreadTwo == True:
 					if not Thread2.isAlive():
 						conditionWait = True
 					else:
-						print("Robocopy still active")
+						editSummary("\n<p>%H:%M:%S: Robocopy still active")
 				else:	
 					conditionWait = True
 			else:
-				print("Robocopy still active...")
+				editSummary("\n<p>%H:%M:%S: Robocopy still active...")
 		
 		# Delete files in source folder
 		if deleteSource.get():
@@ -310,8 +307,7 @@ try:
 						if os.path.isfile(path2):
 							os.remove(path1)
 			except:
-				myTime = datetime.datetime.now()
-				summary += myTime.strftime("\n<p>Problem with deleting files occured at %H:%M:%S\n")
+				editSummary("\n<p>%H:%M:%S: Problem with deleting files\n")
 			# 	
 			# Now empty folders are deleted...	
 			emptyFolders = []
@@ -323,8 +319,7 @@ try:
 					if os.listdir(emptyFolder) == []:
 						shutil.rmtree(emptyFolder)
 			except:
-				myTime = datetime.datetime.now()
-				summary += myTime.strftime("\n<p>Problem with deleting folders occured at %H:%M:%S\n")				
+				editSummary("\n<p>%H:%M:%S: Problem with deleting folders\n")				
 				
 
 		# Compare source and destination folders to determine whether process should be stopped (i.e. no new file created in Source folder)
@@ -334,87 +329,78 @@ try:
 		if os.path.exists(pathDst1):
 			sameContent = compsubfolders(pathSrc, pathDst1)
 			if sameContent==True:
-				print("All files in source were found in destination 1")
+				editSummary("%H:%M:%S: All files in source were found in destination 1")
 				# Continues with dst2 if it exists
 				if pathDst2 != "":
 					if os.path.exists(pathDst2):
 						sameContent = compsubfolders(pathSrc, pathDst1)
 						if sameContent==True:
-							print("All files in source were found in destination 2")
+							editSummary("%H:%M:%S: All files in source were found in destination 2")
 							# Everything went fine both for dst1 and dst2 and there was no change during time lapse indicated
 							condition = True
 					else:
-						myTime = datetime.datetime.now()
-						message = myTime.strftime("\n<p>Problem with comparing files in dst2 occured at %H:%M:%S\nCould not find dst2 folder")
-						summary += message
+						editSummary("\n<p>%H:%M:%S: Problem with comparing files in dst2\nCould not find dst2 folder")
 						# Everything went fine for dst1, dst2 seems not available anymore
 						condition = True
 				else :
 					# Everything went fine for dst1 (no dst2 had been entered by user) and there was no change during time lapse indicated
 					condition = True
 		elif pathDst2 != "":
-			myTime = datetime.datetime.now()
-			message = myTime.strftime("\n<p>Problem with comparing files in dst1 occured at %H:%M:%S\nCould not find dst1 folder\nChecking now dst2\n")
-			summary += message
-			SendEmail(mailAdresse, "Robocopy Info: ERROR", message)
+			editSummary("\n<p>%H:%M:%S: Problem with comparing files in dst1\nCould not find dst1 folder\nChecking now dst2\n")
+			SendEmail(mailAdresse, "Robocopy Info: ERROR", summary)
 			if os.path.exists(pathDst2):
 				sameContent = compsubfolders(pathSrc, pathDst1)
 				if sameContent==True:
-					print("All files in source were found in destination 2")
+					editSummary("\n<p>%H:%M:%S: All files in source were found in destination 2")
 					# dst1 could not be found anymore, but there is a copy on dst2 and no change during time lapse indicated
 					condition = True
 			else :
-				myTime = datetime.datetime.now()
-				summary += myTime.strftime("\n<p>Problem with comparing files in dst2 occured at %H:%M:%S\nCould not find dst2 either\n")
+				editSummary("\n<p>%H:%M:%S: Problem with comparing files in dst2\nCould not find dst2 either\n")
 				SendEmail(mailAdresse, "Robocopy Info: ERROR", summary)
 				# Both destinations are not available anymore
 				condition = True
 		else:
-			summary += myTime.strftime("\n<p>Problem with comparing files in dst1 occured at %H:%M:%S\nCould not find dst1 folder")
-			summary += "Robocopy process aborted"
+			editSummary("\n<p>%H:%M:%S: Problem with comparing files in dst1\nCould not find dst1 folder.\nRobocopy process aborted")
 			# dst1 is not available anymore, no dst2 had been entered
 			condition = True
 
 # Something went wrong at some unidentified step		
 except:
-	summary += "\n<p>An error occured.\n"
-
-print ("Copying from source to destination(s) finished, now copying from dst1 to dst2")
+	editSummary("\n<p>%H:%M:%S: An error occured.\n")
 
 # Copying dst1 to dst2, as dst1 should be local and less error prone and dst2 might miss some files.
+editSummary("\n<p>%H:%M:%S: Copying from source to destination(s) finished, now copying from destination 1 to destination 2")
 sameContent = compsubfolders(pathDst1, pathDst2)
 if sameContent==False:
 	try:
 		Thread3 = threading.Thread(target=worker, args=(pathDst1, pathDst2, silentThread.get(), 0))
 		Thread3.start()
-		print ("Starting copying from destination 1 to destination 2")
+		editSummary("\n<p>%H:%M:%S: Starting copying from destination 1 to destination 2")
 	except:
-		myTime = datetime.datetime.now()
-		summary += myTime.strftime("\n<p>Problem with thread3 (dst1 to dst2) occured at %H:%M:%S")
+		editSummary("\n<p>%H:%M:%S: Problem with thread3 (dst1 to dst2)")
 
 # count number of files in each folder
 try:
 	nbFiles = sum([len(files) for r, d, files in os.walk(pathSrc)])
-	summary += "\n\n<p>Number of files in source = "+str(nbFiles)
+	editSummary("\n<p>%H:%M:%S: Number of files in source = "+str(nbFiles))
 except:
-	summary += "\n<p>Number of files in source could not be checked"
+	editSummary("\n<p>%H:%M:%S: Number of files in source could not be checked")
 	
 try:
 	nbFiles = sum([len(files) for r, d, files in os.walk(pathDst1)])
-	summary += "\n<p>Number of files in source = "+str(nbFiles)
+	editSummary("\n<p>%H:%M:%S: Number of files in source = "+str(nbFiles))
 except:
-	summary += "\n<p>Number of files in Destination 1 could not be checked"
+	editSummary("\n<p>%H:%M:%S: Number of files in Destination 1 could not be checked")
 	
 if pathDst2 != "":
 	try:
 		nbFiles = sum([len(files) for r, d, files in os.walk(pathDst2)])
-		summary += "\n<p>Number of files in source = "+str(nbFiles)
+		editSummary("\n<p>%H:%M:%S: Number of files in source = "+str(nbFiles))
 	except:
-		summary += "\n<p>Number of files in Destination 2 could not be checked"
-					
+		editSummary("\n<p>%H:%M:%S: Number of files in Destination 2 could not be checked")
 
-myTime = datetime.datetime.now()
-summary += myTime.strftime("\n<p>Process finished at %H:%M:%S\n")
+
+editSummary("\n<p>%H:%M:%S: Process finished.")
 
 logfile = open(logfileName, 'w')
 logfile.write(summary)
@@ -424,8 +410,5 @@ logfile.close()
 summary = re.sub("<p>", "", summary)
 SendEmail(mailAdresse, "Robocopy Info", summary)
 
-
-
-print (summary)
-
-
+# In case e-mail could not be sent, summary is printed in Spyder console
+print summary
