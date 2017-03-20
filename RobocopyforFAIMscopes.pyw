@@ -233,7 +233,12 @@ if numdest==1:
 
 # Initialize the summary report
 summary = "Robocopy completed...\n\nSource = "+pathSrc+"\n<p>Target1 = "+pathDst1+"\n<p>Target2 = "+pathDst2+"\n<p>"
-logfileName = r"\\argon\\" + getpass.getuser() + r"\\Desktop\\Robocopy Logfile_Started at " + datetime.datetime.now().strftime("%H-%M-%S") + ".html"
+userName = getpass.getuser()
+if userName == "CVUser":
+    logFilepath = r"C:\\Users\\CVUser\\Desktop\\Robocopy FAIM Logfiles"
+else:
+    logFilepath = r"\\argon\\Desktop" + getpass.getuser()
+logfileName = logFilepath + r"\\Robocopy Logfile_Started at " + datetime.datetime.now().strftime("%H-%M-%S") + ".html"
 editSummary(logfileName, "\n<p>%H:%M:%S: Process started") 
 
 # Starts the copy with Robocopy
