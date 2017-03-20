@@ -35,7 +35,7 @@ def SendEmail(mailAdresse, mailObject, mailText):
 		s.sendmail("laurent.gelman@fmi.ch", mailAdresse, msg.as_string())
 		s.quit()
 	except:
-		editSummary("\n<p>%H:%M:%S: Could not send e-mail")
+		editSummary(logfileName, "\n<p>%H:%M:%S: Could not send e-mail")
 
 
 # FUNCTIONs: get Directories, done and cancel functions
@@ -102,14 +102,18 @@ def compsubfolders(source, destination):
 				
 # FUNCTION TO DO: update summary and write logfile
 # NB: Logfile name should be logfile path = user desktop
-def writeLogFile(summary, logfileName):
-	pass
+def writeLogFile(logfileName, text):
+	logfile = open(logfileName, 'w')
+	logfile.write(text)
+	logfile.close()
 
 # FUNCTION Edit summary
-def editSummary(text):
+def editSummary(logfileName, text):
 	global summary
 	myTime = datetime.datetime.now()
 	summary += myTime.strftime(text)
+	writeLogFile(logfileName, summary)
+	
 	
 # ****************************************************************************************************
 # MAIN
@@ -229,8 +233,8 @@ if numdest==1:
 
 # Initialize the summary report
 summary = "Robocopy completed...\n\nSource = "+pathSrc+"\n<p>Target1 = "+pathDst1+"\n<p>Target2 = "+pathDst2+"\n<p>"
-editSummary("\n<p>%H:%M:%S: Process started") 
 logfileName = r"\\argon\\" + getpass.getuser() + r"\\Desktop\\Robocopy Logile_Started at " + datetime.datetime.now().strftime("%H-%M-%S") + ".html"
+editSummary(logfileName, "\n<p>%H:%M:%S: Process started") 
 
 # Starts the copy with Robocopy
 try:
@@ -243,11 +247,11 @@ try:
 		try:
 			Thread1 = threading.Thread(target=worker, args=(pathSrc, pathDst1, silentThread.get(), 0))
 			Thread1.start()
-			editSummary("\n<p>%H:%M:%S: Starting copying to destination 1")
-			editSummary("\n<p>%H:%M:%S:     Thread 1 running...")
+			editSummary(logfileName, "\n<p>%H:%M:%S: Starting copying to destination 1")
+			editSummary(logfileName, "\n<p>%H:%M:%S: \tThread 1 running...")
 			
 		except:
-			editSummary("\n<p>%H:%M:%S: Problem with thread 1")
+			editSummary(logfileName, "\n<p>%H:%M:%S: Problem with thread 1")
 				
 		# Start second thread if pathDst2 exists
 		if pathDst2 != "":
@@ -258,42 +262,42 @@ try:
 					if not Thread1.isAlive():
 						conditionWait = True
 					else:
-						editSummary("\n<p>%H:%M:%S:     Waiting for Robocopy to finish dst1 before starting dst2...")
+						editSummary(logfileName, "\n<p>%H:%M:%S: \tWaiting for Robocopy to finish dst1 before starting dst2...")
 						sleep(10)	
 				# Start Thread2 now that Thread1 is done
 				try:
 					Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2, silentThread.get(),0))
 					Thread2.start()
-					editSummary("\n<p>%H:%M:%S: Starting copying to destination 2")
-					editSummary("\n<p>%H:%M:%S:     Thread 2 running...")
+					editSummary(logfileName, "\n<p>%H:%M:%S: Starting copying to destination 2")
+					editSummary(logfileName, "\n<p>%H:%M:%S: \tThread 2 running...")
 				except:
-					editSummary("\n<p>%H:%M:%S: Problem with thread 1")
+					editSummary(logfileName, "\n<p>%H:%M:%S: Problem with thread 1")
 					
 			else:
 				# Start Thread2 in parallel to Thread1	
 				try:
 					Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2, silentThread.get(),0))
 					Thread2.start()
-					editSummary("\n<p>%H:%M:%S: Starting copying to destination2")
-					editSummary("\n<p>%H:%M:%S:     Thread 2 running")
+					editSummary(logfileName, "\n<p>%H:%M:%S: Starting copying to destination2")
+					editSummary(logfileName, "\n<p>%H:%M:%S: \tThread 2 running")
 				except:
-					editSummary("\n<p>%H:%M:%S: Problem with thread 2")
+					editSummary(logfileName, "\n<p>%H:%M:%S: Problem with thread 2")
 			
 		# Wait for all threads to be finished before comparing folders
 		conditionWait = False
 		while conditionWait == False:
-			editSummary("\n<p>%H:%M:%S: Waiting for "+str(timeInt.get())+" min before comparing folders again")
+			editSummary(logfileName, "\n<p>%H:%M:%S: Waiting for "+str(timeInt.get())+" min before comparing folders again")
 			sleep(int(timeInt.get()*60))
 			if not Thread1.isAlive():
 				if ThreadTwo == True:
 					if not Thread2.isAlive():
 						conditionWait = True
 					else:
-						editSummary("\n<p>%H:%M:%S: Robocopy still active")
+						editSummary(logfileName, "\n<p>%H:%M:%S: Robocopy still active")
 				else:	
 					conditionWait = True
 			else:
-				editSummary("\n<p>%H:%M:%S: Robocopy still active...")
+				editSummary(logfileName, "\n<p>%H:%M:%S: Robocopy still active...")
 		
 		# Delete files in source folder
 		if deleteSource.get():
@@ -307,7 +311,7 @@ try:
 						if os.path.isfile(path2):
 							os.remove(path1)
 			except:
-				editSummary("\n<p>%H:%M:%S: Problem with deleting files\n")
+				editSummary(logfileName, "\n<p>%H:%M:%S: Problem with deleting files\n")
 			# 	
 			# Now empty folders are deleted...	
 			emptyFolders = []
@@ -319,7 +323,7 @@ try:
 					if os.listdir(emptyFolder) == []:
 						shutil.rmtree(emptyFolder)
 			except:
-				editSummary("\n<p>%H:%M:%S: Problem with deleting folders\n")				
+				editSummary(logfileName, "\n<p>%H:%M:%S: Problem with deleting folders\n")				
 				
 
 		# Compare source and destination folders to determine whether process should be stopped (i.e. no new file created in Source folder)
@@ -329,78 +333,78 @@ try:
 		if os.path.exists(pathDst1):
 			sameContent = compsubfolders(pathSrc, pathDst1)
 			if sameContent==True:
-				editSummary("%H:%M:%S: All files in source were found in destination 1")
+				editSummary(logfileName, "%H:%M:%S: All files in source were found in destination 1")
 				# Continues with dst2 if it exists
 				if pathDst2 != "":
 					if os.path.exists(pathDst2):
 						sameContent = compsubfolders(pathSrc, pathDst1)
 						if sameContent==True:
-							editSummary("%H:%M:%S: All files in source were found in destination 2")
+							editSummary(logfileName, "%H:%M:%S: All files in source were found in destination 2")
 							# Everything went fine both for dst1 and dst2 and there was no change during time lapse indicated
 							condition = True
 					else:
-						editSummary("\n<p>%H:%M:%S: Problem with comparing files in dst2\nCould not find dst2 folder")
+						editSummary(logfileName, "\n<p>%H:%M:%S: Problem with comparing files in dst2\nCould not find dst2 folder")
 						# Everything went fine for dst1, dst2 seems not available anymore
 						condition = True
 				else :
 					# Everything went fine for dst1 (no dst2 had been entered by user) and there was no change during time lapse indicated
 					condition = True
 		elif pathDst2 != "":
-			editSummary("\n<p>%H:%M:%S: Problem with comparing files in dst1\nCould not find dst1 folder\nChecking now dst2\n")
+			editSummary(logfileName, "\n<p>%H:%M:%S: Problem with comparing files in dst1\nCould not find dst1 folder\nChecking now dst2\n")
 			SendEmail(mailAdresse, "Robocopy Info: ERROR", summary)
 			if os.path.exists(pathDst2):
 				sameContent = compsubfolders(pathSrc, pathDst1)
 				if sameContent==True:
-					editSummary("\n<p>%H:%M:%S: All files in source were found in destination 2")
+					editSummary(logfileName, "\n<p>%H:%M:%S: All files in source were found in destination 2")
 					# dst1 could not be found anymore, but there is a copy on dst2 and no change during time lapse indicated
 					condition = True
 			else :
-				editSummary("\n<p>%H:%M:%S: Problem with comparing files in dst2\nCould not find dst2 either\n")
+				editSummary(logfileName, "\n<p>%H:%M:%S: Problem with comparing files in dst2\nCould not find dst2 either\n")
 				SendEmail(mailAdresse, "Robocopy Info: ERROR", summary)
 				# Both destinations are not available anymore
 				condition = True
 		else:
-			editSummary("\n<p>%H:%M:%S: Problem with comparing files in dst1\nCould not find dst1 folder.\nRobocopy process aborted")
+			editSummary(logfileName, "\n<p>%H:%M:%S: Problem with comparing files in dst1\nCould not find dst1 folder.\nRobocopy process aborted")
 			# dst1 is not available anymore, no dst2 had been entered
 			condition = True
 
 # Something went wrong at some unidentified step		
 except:
-	editSummary("\n<p>%H:%M:%S: An error occured.\n")
+	editSummary(logfileName, "\n<p>%H:%M:%S: An error occured.\n")
 
 # Copying dst1 to dst2, as dst1 should be local and less error prone and dst2 might miss some files.
-editSummary("\n<p>%H:%M:%S: Copying from source to destination(s) finished, now copying from destination 1 to destination 2")
+editSummary(logfileName, "\n<p>%H:%M:%S: Copying from source to destination(s) finished, now copying from destination 1 to destination 2")
 sameContent = compsubfolders(pathDst1, pathDst2)
 if sameContent==False:
 	try:
 		Thread3 = threading.Thread(target=worker, args=(pathDst1, pathDst2, silentThread.get(), 0))
 		Thread3.start()
-		editSummary("\n<p>%H:%M:%S: Starting copying from destination 1 to destination 2")
+		editSummary(logfileName, "\n<p>%H:%M:%S: Starting copying from destination 1 to destination 2")
 	except:
-		editSummary("\n<p>%H:%M:%S: Problem with thread3 (dst1 to dst2)")
+		editSummary(logfileName, "\n<p>%H:%M:%S: Problem with thread3 (dst1 to dst2)")
 
 # count number of files in each folder
 try:
 	nbFiles = sum([len(files) for r, d, files in os.walk(pathSrc)])
-	editSummary("\n<p>%H:%M:%S: Number of files in source = "+str(nbFiles))
+	editSummary(logfileName, "\n<p>%H:%M:%S: Number of files in source = "+str(nbFiles))
 except:
-	editSummary("\n<p>%H:%M:%S: Number of files in source could not be checked")
+	editSummary(logfileName, "\n<p>%H:%M:%S: Number of files in source could not be checked")
 	
 try:
 	nbFiles = sum([len(files) for r, d, files in os.walk(pathDst1)])
-	editSummary("\n<p>%H:%M:%S: Number of files in source = "+str(nbFiles))
+	editSummary(logfileName, "\n<p>%H:%M:%S: Number of files in source = "+str(nbFiles))
 except:
-	editSummary("\n<p>%H:%M:%S: Number of files in Destination 1 could not be checked")
+	editSummary(logfileName, "\n<p>%H:%M:%S: Number of files in Destination 1 could not be checked")
 	
 if pathDst2 != "":
 	try:
 		nbFiles = sum([len(files) for r, d, files in os.walk(pathDst2)])
-		editSummary("\n<p>%H:%M:%S: Number of files in source = "+str(nbFiles))
+		editSummary(logfileName, "\n<p>%H:%M:%S: Number of files in source = "+str(nbFiles))
 	except:
-		editSummary("\n<p>%H:%M:%S: Number of files in Destination 2 could not be checked")
+		editSummary(logfileName, "\n<p>%H:%M:%S: Number of files in Destination 2 could not be checked")
 
 
-editSummary("\n<p>%H:%M:%S: Process finished.")
+editSummary(logfileName, "\n<p>%H:%M:%S: Process finished.")
 
 logfile = open(logfileName, 'w')
 logfile.write(summary)
