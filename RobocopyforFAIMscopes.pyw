@@ -237,7 +237,7 @@ userName = getpass.getuser()
 if userName == "CVUser":
     logFilepath = r"C:\\Users\\CVUser\\Desktop\\Robocopy FAIM Logfiles"
 else:
-    logFilepath = r"\\argon\\Desktop" + getpass.getuser()
+    logFilepath = r"\\argon\\"+ userName + r"\\Desktop"
 logfileName = logFilepath + r"\\Robocopy Logfile_Started at " + datetime.datetime.now().strftime("%H-%M-%S") + ".html"
 editSummary(logfileName, "\n<p>%H:%M:%S: Process started") 
 
