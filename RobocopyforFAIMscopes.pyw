@@ -252,6 +252,7 @@ try:
 			
 		except:
 			editSummary(logfileName, "\n<p>%H:%M:%S: Problem with thread 1")
+			SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 				
 		# Start second thread if pathDst2 exists
 		if pathDst2 != "":
@@ -272,6 +273,7 @@ try:
 					editSummary(logfileName, "\n<p>%H:%M:%S: \tThread 2 running...")
 				except:
 					editSummary(logfileName, "\n<p>%H:%M:%S: Problem with thread 1")
+					SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 					
 			else:
 				# Start Thread2 in parallel to Thread1	
@@ -282,6 +284,7 @@ try:
 					editSummary(logfileName, "\n<p>%H:%M:%S: \tThread 2 running")
 				except:
 					editSummary(logfileName, "\n<p>%H:%M:%S: Problem with thread 2")
+					SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 			
 		# Wait for all threads to be finished before comparing folders
 		conditionWait = False
@@ -312,6 +315,7 @@ try:
 							os.remove(path1)
 			except:
 				editSummary(logfileName, "\n<p>%H:%M:%S: Problem with deleting files\n")
+				SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 			# 	
 			# Now empty folders are deleted...	
 			emptyFolders = []
@@ -344,6 +348,7 @@ try:
 							condition = True
 					else:
 						editSummary(logfileName, "\n<p>%H:%M:%S: Problem with comparing files in dst2\nCould not find dst2 folder")
+						SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 						# Everything went fine for dst1, dst2 seems not available anymore
 						condition = True
 				else :
@@ -351,7 +356,7 @@ try:
 					condition = True
 		elif pathDst2 != "":
 			editSummary(logfileName, "\n<p>%H:%M:%S: Problem with comparing files in dst1\nCould not find dst1 folder\nChecking now dst2\n")
-			SendEmail(mailAdresse, "Robocopy Info: ERROR", summary)
+			SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 			if os.path.exists(pathDst2):
 				sameContent = compsubfolders(pathSrc, pathDst1)
 				if sameContent==True:
@@ -360,11 +365,12 @@ try:
 					condition = True
 			else :
 				editSummary(logfileName, "\n<p>%H:%M:%S: Problem with comparing files in dst2\nCould not find dst2 either\n")
-				SendEmail(mailAdresse, "Robocopy Info: ERROR", summary)
+				SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 				# Both destinations are not available anymore
 				condition = True
 		else:
 			editSummary(logfileName, "\n<p>%H:%M:%S: Problem with comparing files in dst1\nCould not find dst1 folder.\nRobocopy process aborted")
+			SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 			# dst1 is not available anymore, no dst2 had been entered
 			condition = True
 
