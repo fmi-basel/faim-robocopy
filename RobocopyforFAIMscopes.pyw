@@ -3,6 +3,7 @@
 import ctypes, datetime, getpass, os, re, sys, shutil, threading, tkMessageBox
 import subprocess
 from filecmp import dircmp
+import filecmp
 from time import sleep
 from Tkinter import Checkbutton, Button, Entry, Label, Tk, StringVar, DoubleVar, IntVar, RIDGE, X, LEFT
 
@@ -319,7 +320,7 @@ try:
 					for myFile in files:
 						path1 = os.path.join(root, myFile)
 						path2 = re.sub(pathSrc, pathDst1, path1)
-						if os.path.isfile(path2):
+						if os.path.isfile(path2) & filecmp.cmp(path1, path2)==True:
 							os.remove(path1)
 			except:
 				editSummary(logfileName, "\n<p>%H:%M:%S: Problem with deleting files\n")
