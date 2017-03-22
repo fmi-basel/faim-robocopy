@@ -5,7 +5,7 @@ import subprocess
 from filecmp import dircmp
 import filecmp
 from time import sleep
-from Tkinter import Checkbutton, Button, Entry, Label, Tk, StringVar, DoubleVar, IntVar, RIDGE, X, LEFT
+from Tkinter import Checkbutton, Button, Entry, Label, Text, Tk, StringVar, DoubleVar, IntVar, RIDGE, X, LEFT
 
 
 def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThread, deleteSource, mailAdresse):
@@ -24,7 +24,7 @@ def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThrea
 			pathDst1 = pathDst2
 			pathDst2 = ""
 	# Initialize the summary report
-	summary = "Robocopy completed...\n\nSource = "+pathSrc+"\n<p>Target1 = "+pathDst1+"\n<p>Target2 = "+pathDst2+"\n<p>"
+	summary = "Robocopy Folders:\n\nSource = "+pathSrc+"\n<p>Target1 = "+pathDst1+"\n<p>Target2 = "+pathDst2+"\n<p>"
 	# Define the path for saving the Log file
 	userName = getpass.getuser()
 	if userName == "CVUser":
@@ -51,7 +51,6 @@ def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThrea
 			if pathDst2 != "":
 				if multiThread == 0:
 					# wait for Thread1 to be finished before starting Thread2
-					print("checking for dst1 to be finished")
 					conditionWait = False
 					while conditionWait == False:
 						if not Thread1.isAlive():
@@ -85,7 +84,6 @@ def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThrea
 			# Wait for all threads to be finished before comparing folders in case time-interval was not sufficient
 			conditionWait = False
 			while conditionWait == False:
-				print Thread1.isAlive()
 				if not Thread1.isAlive():
 					if ThreadTwo == True:
 						if not Thread2.isAlive():
@@ -174,8 +172,8 @@ def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThrea
 	# Something went wrong at some unidentified step		
 	except:
 		summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: An error occured.\n")
-		pass
-	
+		SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
+		
 	# Copying dst1 to dst2, as dst1 should be local and less error prone and dst2 might miss some files.
 	summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Copying from source to destination(s) finished")
 	
@@ -229,6 +227,7 @@ def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThrea
 	
 	# Send E-mail at the end with the summary
 	summary = re.sub("<p>", "", summary)
+	dialogSummary.set("Process finished")
 	SendEmail(mailAdresse, "Robocopy Info", summary)
 	
 	# In case e-mail could not be sent, summary is printed in Spyder console
@@ -299,12 +298,13 @@ def doCopy():
 		#root.destroy()
 		mainThread = threading.Thread(target = mainProg, args = (srcTxt.get(), dst1Txt.get(), dst2Txt.get(), multiThr.get(), timeInt.get(), silentThr.get(), deleteSrc.get(), mail.get()))
 		mainThread.start()
-		
+# FUNCTION Cancel		
 def cancel():
 	print ("Dialog Canceled")
 	root.destroy()
 	sys.exit()
 
+# FUNCTION abort
 def abort(adresse, text):
 	SendEmail(adresse, "Robocopy Aborted", text)
 
@@ -312,7 +312,8 @@ def abort(adresse, text):
 def worker(var1, var2, silent):
 	print ("worker started !!!")
 	if silent==0:
-		subprocess.Popen(["robocopy", var1, var2, "/e", "/Z", "/r:0", "/w:30", "/COPY:DT", "/dcopy:T"], creationflags=subprocess.SW_HIDE, shell=True)
+		FNULL = open(os.devnull, 'w')
+		subprocess.call(["robocopy", var1, var2, "/e", "/Z", "/r:0", "/w:30", "/COPY:DT", "/dcopy:T"], stdout=FNULL, stderr=subprocess.STDOUT)
 	else:
 		subprocess.call(["robocopy", var1, var2, "/e", "/Z", "/r:0", "/w:30", "/COPY:DT", "/dcopy:T"])
 
@@ -345,6 +346,8 @@ def editSummary(logfileName, text1, text2):
 	myTime = datetime.datetime.now()
 	text1 += myTime.strftime(text2)
 	writeLogFile(logfileName, text1)
+	textTemp = re.sub("<p>", "", text1)
+	dialogSummary.set(textTemp)
 	return text1
 	
 	
@@ -362,7 +365,6 @@ try:
 except:
 	mailAdresse = "FirstName.LastName@fmi.ch"
 # Source folder selection
-global srcTxt
 srcTxt = StringVar()
 srcTxt.set("")
 srcButton = Button(root, text = 'Source directory', overrelief=RIDGE, font = "arial 10",  command=chooseSrcDir)
@@ -372,7 +374,6 @@ srcTxtLabel = Label(root, textvariable = srcTxt, font = "arial 10")
 srcTxtLabel.config(bg = "light steel blue")
 srcTxtLabel.pack(padx = 10, anchor = "w")
 # Destination 1 folder selection
-global dst1Txt
 dst1Txt = StringVar()
 dst1Txt.set("")
 dst1Button = Button(root, text = 'Destination 1 directory', overrelief=RIDGE, font = "arial 10", command=chooseDst1Dir)
@@ -382,7 +383,6 @@ dst1TxtLabel = Label(root, textvariable = dst1Txt, font = "arial 10")
 dst1TxtLabel.config(bg = "light steel blue")
 dst1TxtLabel.pack(padx = 10, anchor = "w")
 # Destination 2 folder selection
-global dst2Txt
 dst2Txt = StringVar()
 dst2Txt.set("")
 dst2Button = Button(root, text = 'Destination 2 directory', overrelief=RIDGE, font = "arial 10", command=chooseDst2Dir)
@@ -392,26 +392,22 @@ dst2TxtLabel = Label(root, textvariable = dst2Txt, font = "arial 10")
 dst2TxtLabel.config(bg = "light steel blue")
 dst2TxtLabel.pack(padx = 10, anchor = "w")
 # Options checkboxes
-global multiThr
 multiThr = IntVar()
 multiThr.set(0)
 multiCheckBox = Checkbutton(root, text="Copy both destinations in parallel", wraplength=200, variable=multiThr)
 multiCheckBox.config(bg = "light steel blue", fg="black", justify = LEFT)
 multiCheckBox.pack(padx = 10, pady=5, anchor="w")
-global silentThr
 silentThr = IntVar()
 silentThr.set(0)
 silentCheckBox = Checkbutton(root, text="Show Robocopy console", wraplength=200, variable=silentThr)
 silentCheckBox.config(bg = "light steel blue", fg="black", justify = LEFT)
 silentCheckBox.pack(padx = 10, pady=5, anchor="w")
-global deleteSrc
 deleteSrc = IntVar()
 deleteSrc.set(0)
 delCheckBox = Checkbutton(root, text="Delete files in source folder after copy", wraplength=200, variable=deleteSrc)
 delCheckBox.config(bg = "light steel blue", fg="black", justify = LEFT)
 delCheckBox.pack(padx = 10, pady=5, anchor="w")
 # Time-lapse information
-global timeInt
 timeInt = DoubleVar()
 timeInt.set(0.1)
 tiLabel = Label(root, text="Time interval (min):", font = "arial 10")
@@ -421,7 +417,6 @@ tiText = Entry(root, width=6, justify=LEFT, textvariable = timeInt)
 tiText.config(bg = "light steel blue", fg="black")
 tiText.pack(padx = 10, anchor="w")
 # E-mail information
-global mail
 mail = StringVar()
 mail.set(mailAdresse)
 sendLabel = Label(root, text="Send Info to:", font = "arial 10")
@@ -430,6 +425,12 @@ sendLabel.pack(padx = 10, pady= 5, anchor="w")
 adresseText = Entry(root, justify=LEFT, width = 25, textvariable = mail)
 adresseText.config(bg = "light steel blue", fg="black")
 adresseText.pack(padx = 10, anchor="w")
+# small window with summary
+dialogSummary = StringVar()
+dialogSummary.set("*** Summary window *****")
+sumLabel = Label(root, textvariable=dialogSummary, font = "arial 10")
+sumLabel.config(bg = "light steel blue", fg="navy", justify = LEFT, height = 12)
+sumLabel.pack(padx = 10, pady= 10, anchor="w")
 # Do Copy and Cancel buttons
 spaceLabel = Label(root, text=" ", font = "arial 10")
 spaceLabel.config(bg = "light steel blue", fg="black")
