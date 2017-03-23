@@ -14,10 +14,10 @@ def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThrea
 	numdest = 0
 	if (pathDst1 != "") | (pathDst2 != ""):
 		numdest = 1
-		ThreadTwo = False
+		#ThreadTwo = False
 	if (pathDst1 != "") & (pathDst2 != ""):
 		numdest = 2
-		ThreadTwo = True
+		#ThreadTwo = True
 	# If only one destination enterd, attribute it to pathDst1
 	if numdest==1:
 		if pathDst1 == "":
@@ -28,24 +28,33 @@ def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThrea
 	# Define the path for saving the Log file
 	userName = getpass.getuser()
 	if userName == "CVUser":
-	    logFilepath = r"C:\\Users\\CVUser\\Desktop\\Robocopy FAIM Logfiles"
+		logFilepath = r"C:\\Users\\CVUser\\Desktop\\Robocopy FAIM Logfiles"
 	else:
-	    logFilepath = r"\\argon\\"+ userName + r"\\Desktop"
+		logFilepath = r"\\argon\\"+ userName + r"\\Desktop"
+		if os.path.exists(logFilepath) == False:
+			logFilepath = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
 	logfileName = logFilepath + r"\\Robocopy Logfile_Started at " + datetime.datetime.now().strftime("%H-%M-%S") + ".html"
 	# Edit summary
 	summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Process started") 
 	# Starts the copy with Robocopy
+	# initialise Threads
+	global Thread1
+	Thread1 = threading.Thread()
+	global Thread2
+	Thread2 = threading.Thread()
 	condition = False
 	try:
 		while condition == False:
-			# Start Thread1
-			try:
-				Thread1 = threading.Thread(target=worker, args=(pathSrc, pathDst1, silentThread))
-				Thread1.start()
-				summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Copying to destination 1")
-			except:
-				summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with thread 1")
-				SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
+			# ****Start Thread1********
+			# Checks first that Thread1 is not running, otherwise skip the step.
+			if Thread1.isAlive() == False:
+				try:
+					Thread1 = threading.Thread(target=worker, args=(pathSrc, pathDst1, silentThread))
+					Thread1.start()
+					summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Copying to destination 1")
+				except:
+					summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with thread 1")
+					SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 					
 			# Start second thread if pathDst2 exists
 			if pathDst2 != "":
@@ -59,44 +68,29 @@ def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThrea
 							summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: \tWaiting for Robocopy to finish dst1 before starting dst2...")
 							sleep(10)	
 					# Start Thread2 now that Thread1 is done
-					try:
-						Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2, silentThread))
-						Thread2.start()
-						summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Copying to destination 2")
-					except:
-						summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with thread 1")
-						SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
+					if Thread2.isAlive() == False:
+						try:
+							Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2, silentThread))
+							Thread2.start()
+							summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Copying to destination 2")
+						except:
+							summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with thread 1")
+							SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 						
 				else:
-					# Start Thread2 in parallel to Thread1	
-					try:
-						Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2, silentThread))
-						Thread2.start()
-						summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Copying to destination2")
-					except:
-						summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with thread 2")
-						SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
+					# Start Thread2 in parallel to Thread1
+					if Thread2.isAlive() == False:
+						try:
+							Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2, silentThread))
+							Thread2.start()
+							summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Copying to destination2")
+						except:
+							summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with thread 2")
+							SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 			
 			# Wait next time-point before comparing folders
 			summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Waiting for "+str(timeInterval)+" min before comparing folders again")
 			sleep(int(timeInterval*60))
-			
-			# Wait for all threads to be finished before comparing folders in case time-interval was not sufficient
-			conditionWait = False
-			while conditionWait == False:
-				if not Thread1.isAlive():
-					if ThreadTwo == True:
-						if not Thread2.isAlive():
-							conditionWait = True
-						else:
-							summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: \tCopying to destination 2 still active... Waiting 10sec more...")
-							sleep(10)
-					else:	
-						conditionWait = True
-				else:
-					summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: \tCopying to destination 1 still active... Waiting 10sec more...")
-					sleep(10)
-			
 			# Delete files in source folder
 			if deleteSource:
 				# NB: If pathDst1 is not connected, no deletion accurs.
@@ -124,7 +118,7 @@ def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThrea
 				except:
 					summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with deleting folders\n")
 					
-	
+
 			# Compare source and destination folders to determine whether process should be stopped (i.e. no new file created in Source folder)
 			# If no new file or folder was created since the beginning of the robocopy, then the condition is true and loop is terminated (= exit)
 			#
@@ -215,7 +209,6 @@ def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThrea
 		summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Number of files in destination 1 = "+str(nbFiles))
 	except:
 		summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Number of files in destination 1 could not be checked")
-	
 	if pathDst2 != "":
 		try:
 			nbFiles = sum([len(files) for r, d, files in os.walk(pathDst2)])
@@ -233,6 +226,9 @@ def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThrea
 	# In case e-mail could not be sent, summary is printed in Spyder console
 	print summary
 	
+# FUNCTION: Check if Thread is running
+def TestThreads(number):
+	pass
 
 # FUNCTION: get User full name
 def get_display_name():
@@ -301,6 +297,17 @@ def doCopy():
 # FUNCTION Cancel		
 def cancel():
 	print ("Dialog Canceled")
+	try:
+		Thread1.run = False
+		print ("Stopping Thread1")
+	except:
+		pass
+	try:
+		Thread2.run = False
+		print ("Stopping Thread2")
+	except:
+		pass
+	
 	root.destroy()
 	sys.exit()
 
@@ -337,9 +344,12 @@ def compsubfolders(source, destination):
 				
 # FUNCTION TO DO: update summary and write logfile
 def writeLogFile(logfileName, text):
-	logfile = open(logfileName, 'w')
-	logfile.write(text)
-	logfile.close()
+	try:
+		logfile = open(logfileName, 'w')
+		logfile.write(text)
+		logfile.close()
+	except:
+		print ("Problem with logfile: " +logfileName)
 
 # FUNCTION Edit summary
 def editSummary(logfileName, text1, text2):
@@ -409,7 +419,7 @@ delCheckBox.config(bg = "light steel blue", fg="black", justify = LEFT)
 delCheckBox.pack(padx = 10, pady=5, anchor="w")
 # Time-lapse information
 timeInt = DoubleVar()
-timeInt.set(0.1)
+timeInt.set(0.5)
 tiLabel = Label(root, text="Time interval (min):", font = "arial 10")
 tiLabel.config(bg = "light steel blue", fg="black")
 tiLabel.pack(padx = 10, anchor="w")
@@ -425,7 +435,7 @@ sendLabel.pack(padx = 10, pady= 5, anchor="w")
 adresseText = Entry(root, justify=LEFT, width = 25, textvariable = mail)
 adresseText.config(bg = "light steel blue", fg="black")
 adresseText.pack(padx = 10, anchor="w")
-# small window with summary
+# Summary
 dialogSummary = StringVar()
 dialogSummary.set("*** Summary window *****")
 sumLabel = Label(root, textvariable=dialogSummary, font = "arial 10")
