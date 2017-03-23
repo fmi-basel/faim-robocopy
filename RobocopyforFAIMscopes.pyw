@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import ctypes, datetime, getpass, os, re, sys, shutil, threading, tkMessageBox
-import subprocess
+import ctypes, datetime, getpass, os, psutil, re, subprocess, sys, shutil, threading, tkMessageBox
 from filecmp import dircmp
 import filecmp
 from time import sleep
@@ -295,25 +294,32 @@ def doCopy():
 		mainThread = threading.Thread(target = mainProg, args = (srcTxt.get(), dst1Txt.get(), dst2Txt.get(), multiThr.get(), timeInt.get(), silentThr.get(), deleteSrc.get(), mail.get()))
 		mainThread.start()
 # FUNCTION Cancel		
-def cancel():
+def abort():
 	print ("Dialog Canceled")
+	root.destroy()
 	try:
 		Thread1.run = False
-		print ("Stopping Thread1")
-	except:
-		pass
-	try:
 		Thread2.run = False
-		print ("Stopping Thread2")
 	except:
 		pass
-	
-	root.destroy()
+	for proc in psutil.process_iter():
+		if proc.name() == "conhost.exe":
+			process = psutil.Process(proc.pid)
+			process.terminate()
+			
+	for proc in psutil.process_iter():
+		if proc.name() == "Robocopy.exe":
+			process = psutil.Process(proc.pid)
+			process.terminate()
+	"""
+	for proc in psutil.process_iter():
+		if proc.name() == "python.exe":
+			process = psutil.Process(proc.pid)
+			process.terminate()
+	"""
+	process = psutil.Process()
+	process.terminate()
 	sys.exit()
-
-# FUNCTION abort
-def abort(adresse, text):
-	SendEmail(adresse, "Robocopy Aborted", text)
 
 # FUNCTION: Workers / Threads
 def worker(var1, var2, silent):
@@ -364,7 +370,7 @@ def editSummary(logfileName, text1, text2):
 # *******************************
 # DIALOG WINDOW
 # *******************************
-
+process = psutil.Process()
 # Dialog window
 root = Tk()
 root.title("Robocopy FAIM")
@@ -441,15 +447,16 @@ dialogSummary.set("*** Summary window *****")
 sumLabel = Label(root, textvariable=dialogSummary, font = "arial 10")
 sumLabel.config(bg = "light steel blue", fg="navy", justify = LEFT, height = 12)
 sumLabel.pack(padx = 10, pady= 10, anchor="w")
-# Do Copy and Cancel buttons
+# Space
 spaceLabel = Label(root, text=" ", font = "arial 10")
 spaceLabel.config(bg = "light steel blue", fg="black")
 spaceLabel.pack(padx = 15, anchor="w")
+# Do Copy and Cancel buttons
 doCopyButton = Button(root, text = 'Do Copy !', width = 8, overrelief=RIDGE, font = "arial 10", command = doCopy)
 doCopyButton.config(bg = "lime green", fg="black")
 doCopyButton.pack(side = "left", padx = 10, pady=5)
-cancelButton = Button(root, text = 'Cancel', width = 8, overrelief=RIDGE, font = "arial 10", command = cancel)
-cancelButton.config(bg = "orange", fg="black")
+cancelButton = Button(root, text = 'Abort', width = 8, overrelief=RIDGE, font = "arial 10", command = abort)
+cancelButton.config(bg = "red", fg="black")
 cancelButton.pack(side = "right", padx = 10, pady=5)
 root.config(bg="light steel blue")
 # Show Dialog Window
