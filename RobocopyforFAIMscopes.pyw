@@ -4,7 +4,7 @@ import ctypes, datetime, getpass, os, psutil, re, subprocess, sys, shutil, threa
 from filecmp import dircmp
 import filecmp
 from time import sleep
-from Tkinter import Checkbutton, Button, Entry, Label, Text, Tk, StringVar, DoubleVar, IntVar, RIDGE, X, LEFT
+from Tkinter import Checkbutton, Button, Entry, Label, Tk, StringVar, DoubleVar, IntVar, RIDGE, X, LEFT
 
 
 def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThread, deleteSource, mailAdresse):
@@ -29,10 +29,10 @@ def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThrea
 	if userName == "CVUser":
 		logFilepath = r"C:\\Users\\CVUser\\Desktop\\Robocopy FAIM Logfiles"
 	else:
-		logFilepath = r"\\argon\\"+ userName + r"\\Desktop"
+		logFilepath = os.path.join(os.environ['HOMESHARE'], 'Desktop')
 		if os.path.exists(logFilepath) == False:
-			logFilepath = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
-	logfileName = logFilepath + r"\\Robocopy Logfile_Started at " + datetime.datetime.now().strftime("%H-%M-%S") + ".html"
+			logFilepath = os.path.join(os.environ['USERPROFILE'], 'Desktop')
+	logfileName = logFilepath + r"\\Robocopy_Logfile_" + datetime.datetime.now().strftime("%H-%M-%S") + ".html"
 	# Edit summary
 	summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Process started") 
 	# Starts the copy with Robocopy
@@ -362,14 +362,25 @@ def editSummary(logfileName, text1, text2):
 	myTime = datetime.datetime.now()
 	text1 += myTime.strftime(text2)
 	writeLogFile(logfileName, text1)
-	textTemp = re.sub("<p>", "", text1)
-	dialogSummary.set(textTemp)
+	text3 = text1
+	for j in range (10):
+		j = text3.rfind("<p>")
+		if j>=0:
+			text3 = text3[:j]
+		else:
+			j=0
+			break
+	dialogSummary.set(text1[j:])
 	return text1
 	
 	
 # *******************************
 # DIALOG WINDOW
 # *******************************
+if sys.executable.endswith("pythonw.exe"):
+  sys.stdout = open(os.devnull, "w");
+  sys.stderr = open(os.path.join(os.getenv("TEMP"), "stderr-"+os.path.basename(sys.argv[0])), "w")
+
 process = psutil.Process()
 # Dialog window
 root = Tk()
@@ -435,7 +446,7 @@ tiText.pack(padx = 10, anchor="w")
 # E-mail information
 mail = StringVar()
 mail.set(mailAdresse)
-sendLabel = Label(root, text="Send Info to:", font = "arial 10")
+sendLabel = Label(root, text="Send Summary to:", font = "arial 10")
 sendLabel.config(bg = "light steel blue", fg="black")
 sendLabel.pack(padx = 10, pady= 5, anchor="w")
 adresseText = Entry(root, justify=LEFT, width = 25, textvariable = mail)
