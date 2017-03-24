@@ -7,7 +7,7 @@ from time import sleep
 from Tkinter import Checkbutton, Button, Entry, Label, Tk, StringVar, DoubleVar, IntVar, RIDGE, X, LEFT
 
 
-def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThread, deleteSource, mailAdresse):
+def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThread, deleteSource, mailAdresse, waitExit):
 	print (pathSrc+"; "+pathDst1+"; "+pathDst2+"; "+str(multiThread)+"; "+str(timeInterval)+"; "+str(silentThread)+"; "+str(deleteSource)+"; "+mailAdresse)
 	# test number of destination entered				
 	numdest = 0
@@ -42,18 +42,25 @@ def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThrea
 	global Thread2
 	Thread2 = threading.Thread()
 	condition = False
+	checkTime = datetime.datetime.now()
 	try:
 		while condition == False:
 			# ****Start Thread1********
 			# Checks first that Thread1 is not running, otherwise skip the step.
-			if Thread1.isAlive() == False:
-				try:
-					Thread1 = threading.Thread(target=worker, args=(pathSrc, pathDst1, silentThread))
-					Thread1.start()
-					summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Copying to destination 1")
-				except:
-					summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with thread 1")
-					SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
+			sameContent = compsubfolders(pathSrc, pathDst1)
+			if sameContent == False:
+				checkTime = datetime.datetime.now()
+				if Thread1.isAlive() == False | sameContent == False:
+					checkTime = datetime.datetime.now()
+					try:
+						Thread1 = threading.Thread(target=worker, args=(pathSrc, pathDst1, silentThread))
+						Thread1.start()
+						summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Copying to destination 1")
+					except:
+						summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with thread 1")
+						SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
+				else:
+					pass
 					
 			# Start second thread if pathDst2 exists
 			if pathDst2 != "":
@@ -64,47 +71,64 @@ def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThrea
 						if not Thread1.isAlive():
 							conditionWait = True
 						else:
-							summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: \tWaiting for Robocopy to finish dst1 before starting dst2...")
 							sleep(10)	
 					# Start Thread2 now that Thread1 is done
-					if Thread2.isAlive() == False:
-						try:
-							Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2, silentThread))
-							Thread2.start()
-							summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Copying to destination 2")
-						except:
-							summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with thread 1")
-							SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
+					sameContent = compsubfolders(pathSrc, pathDst2)
+					if sameContent == False:
+						checkTime = datetime.datetime.now()
+						if Thread2.isAlive() == False:
+							try:
+								Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2, silentThread))
+								Thread2.start()
+								summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Copying to destination 2")
+							except:
+								summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with thread 1")
+								SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
+						else:
+							pass
 						
 				else:
 					# Start Thread2 in parallel to Thread1
-					if Thread2.isAlive() == False:
-						try:
-							Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2, silentThread))
-							Thread2.start()
-							summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Copying to destination2")
-						except:
-							summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with thread 2")
-							SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
+					sameContent = compsubfolders(pathSrc, pathDst2)
+					if sameContent == False:
+						checkTime = datetime.datetime.now()
+						if Thread2.isAlive() == False:
+							try:
+								Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2, silentThread))
+								Thread2.start()
+								summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Copying to destination2")
+							except:
+								summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with thread 2")
+								SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
+						else:
+							pass
 			
 			# Wait next time-point before comparing folders
-			summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Waiting for "+str(timeInterval)+" min before comparing folders again")
+			summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Waiting for "+str(timeInterval)+" min before next Robocopy")
 			sleep(int(timeInterval*60))
+			
 			# Delete files in source folder
 			if deleteSource:
-				# NB: If pathDst1 is not connected, no deletion accurs.
-				# The script deletes first each file one by one and then goes once more through folders
 				try:
 					for root, directories, files in os.walk(pathSrc):
 						for myFile in files:
-							path1 = os.path.join(root, myFile)
-							path2 = re.sub(pathSrc, pathDst1, path1)
-							if os.path.isfile(path2) & filecmp.cmp(path1, path2)==True:
-								os.remove(path1)
+							pathS = os.path.join(root, myFile)
+							path1 = re.sub(pathSrc, pathDst1, pathS)
+							path2 = re.sub(pathSrc, pathDst2, pathS)
+							if os.path.isfile(path1) & filecmp.cmp(pathS, path1)==True:
+								if pathDst2 != "":
+									if os.path.isfile(path2) & filecmp.cmp(pathS, path2)==True:
+										os.remove(pathS)
+									else:
+										pass
+								else:
+									os.remove(pathS)
+							else:
+								pass
 				except:
 					summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with deleting files\n")
 					SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
-				# 	
+				
 				# Now empty folders are deleted...	
 				emptyFolders = []
 				try:
@@ -120,47 +144,51 @@ def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThrea
 
 			# Compare source and destination folders to determine whether process should be stopped (i.e. no new file created in Source folder)
 			# If no new file or folder was created since the beginning of the robocopy, then the condition is true and loop is terminated (= exit)
-			#
-			# Starts by checking if dst1 still connected and then compare content of folders
-			if os.path.exists(pathDst1):
-				sameContent = compsubfolders(pathSrc, pathDst1)
-				if sameContent==True:
-					summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: All files in source were found in destination 1")
-					# Continues with dst2 if it exists
-					if pathDst2 != "":
-						if os.path.exists(pathDst2):
-							sameContent = compsubfolders(pathSrc, pathDst1)
-							if sameContent==True:
-								summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: All files in source were found in destination 2")
-								# Everything went fine both for dst1 and dst2 and there was no change during time lapse indicated
-								condition = True
-						else:
-							summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with comparing files in dst2\nCould not find dst2 folder")
-							SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
-							# Everything went fine for dst1, dst2 seems not available anymore
-							condition = True
-					else :
-						# Everything went fine for dst1 (no dst2 had been entered by user) and there was no change during time lapse indicated
-						condition = True
-			elif pathDst2 != "":
-				summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with comparing files in dst1\nCould not find dst1 folder\nChecking now dst2\n")
-				SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
-				if os.path.exists(pathDst2):
+			exitTime = datetime.datetime.now()
+			timeDiff = exitTime - checkTime
+			if int(timeDiff.total_seconds()) >= int(waitExit*60):
+				checkTime = exitTime
+				summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Checking whether all folders are the same\n")
+				# Starts by checking if dst1 still connected and then compare content of folders
+				if os.path.exists(pathDst1):
 					sameContent = compsubfolders(pathSrc, pathDst1)
 					if sameContent==True:
-						summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: All files in source were found in destination 2")
-						# dst1 could not be found anymore, but there is a copy on dst2 and no change during time lapse indicated
-						condition = True
-				else :
-					summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with comparing files in dst2\nCould not find dst2 either\n")
+						summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: All files in source were found in destination 1")
+						# Continues with dst2 if it exists
+						if pathDst2 != "":
+							if os.path.exists(pathDst2):
+								sameContent = compsubfolders(pathSrc, pathDst1)
+								if sameContent==True:
+									summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: All files in source were found in destination 2")
+									# Everything went fine both for dst1 and dst2 and there was no change during time lapse indicated
+									condition = True
+							else:
+								summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with comparing files in dst2\nCould not find dst2 folder")
+								SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
+								# Everything went fine for dst1, dst2 seems not available anymore
+								condition = True
+						else :
+							# Everything went fine for dst1 (no dst2 had been entered by user) and there was no change during time lapse indicated
+							condition = True
+				elif pathDst2 != "":
+					summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with comparing files in dst1\nCould not find dst1 folder\nChecking now dst2\n")
 					SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
-					# Both destinations are not available anymore
+					if os.path.exists(pathDst2):
+						sameContent = compsubfolders(pathSrc, pathDst1)
+						if sameContent==True:
+							summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: All files in source were found in destination 2")
+							# dst1 could not be found anymore, but there is a copy on dst2 and no change during time lapse indicated
+							condition = True
+					else :
+						summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with comparing files in dst2\nCould not find dst2 either\n")
+						SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
+						# Both destinations are not available anymore
+						condition = True
+				else:
+					summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with comparing files in dst1\nCould not find dst1 folder.\nRobocopy process aborted")
+					SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
+					# dst1 is not available anymore, no dst2 had been entered
 					condition = True
-			else:
-				summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with comparing files in dst1\nCould not find dst1 folder.\nRobocopy process aborted")
-				SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
-				# dst1 is not available anymore, no dst2 had been entered
-				condition = True
 	
 	# Something went wrong at some unidentified step		
 	except:
@@ -291,8 +319,9 @@ def doCopy():
 		root2.destroy()
 	else:
 		#root.destroy()
-		mainThread = threading.Thread(target = mainProg, args = (srcTxt.get(), dst1Txt.get(), dst2Txt.get(), multiThr.get(), timeInt.get(), silentThr.get(), deleteSrc.get(), mail.get()))
+		mainThread = threading.Thread(target = mainProg, args = (srcTxt.get(), dst1Txt.get(), dst2Txt.get(), multiThr.get(), timeInt.get(), silentThr.get(), deleteSrc.get(), mail.get(), timeExit.get()))
 		mainThread.start()
+		
 # FUNCTION Cancel		
 def abort():
 	print ("Dialog Canceled")
@@ -311,12 +340,7 @@ def abort():
 		if proc.name() == "Robocopy.exe":
 			process = psutil.Process(proc.pid)
 			process.terminate()
-	"""
-	for proc in psutil.process_iter():
-		if proc.name() == "python.exe":
-			process = psutil.Process(proc.pid)
-			process.terminate()
-	"""
+
 	process = psutil.Process()
 	process.terminate()
 	sys.exit()
@@ -437,12 +461,21 @@ delCheckBox.pack(padx = 10, pady=5, anchor="w")
 # Time-lapse information
 timeInt = DoubleVar()
 timeInt.set(0.5)
-tiLabel = Label(root, text="Time interval (min):", font = "arial 10")
+tiLabel = Label(root, text="Time interval between Robocopy processes (min):", font = "arial 10")
 tiLabel.config(bg = "light steel blue", fg="black")
 tiLabel.pack(padx = 10, anchor="w")
 tiText = Entry(root, width=6, justify=LEFT, textvariable = timeInt)
 tiText.config(bg = "light steel blue", fg="black")
 tiText.pack(padx = 10, anchor="w")
+# Time-Exit information
+timeExit = DoubleVar()
+timeExit.set(5)
+tiexLabel = Label(root, text="Time for exiting if no change in folders (min):", font = "arial 10")
+tiexLabel.config(bg = "light steel blue", fg="black")
+tiexLabel.pack(padx = 10, anchor="w")
+tiexText = Entry(root, width=6, justify=LEFT, textvariable = timeExit)
+tiexText.config(bg = "light steel blue", fg="black")
+tiexText.pack(padx = 10, anchor="w")
 # E-mail information
 mail = StringVar()
 mail.set(mailAdresse)
