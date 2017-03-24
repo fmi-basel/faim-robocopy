@@ -194,37 +194,7 @@ def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThrea
 	except:
 		summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: An error occured.\n")
 		SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
-		
-	# Copying dst1 to dst2, as dst1 should be local and less error prone and dst2 might miss some files.
-	summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Copying from source to destination(s) finished")
-	
-	ThreadThree = False
-	if pathDst2 != "":
-		sameContent = compsubfolders(pathDst1, pathDst2)
-		if sameContent==False:
-			try:
-				Thread3 = threading.Thread(target=worker, args=(pathDst1, pathDst2, silentThread))
-				Thread3.start()
-				summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Copying missing files from destination 1 to destination 2")
-				ThreadThree = True
-			except:
-				summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with thread3 (dst1 to dst2)")
-				SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
-		else:
-			summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: destination 1 and destination 2 were checked and have same content")
 
-	# Wait for copying from dest1 to dest2 to be finished
-	conditionWait = False
-	while conditionWait == False:
-		if ThreadThree:
-			if not Thread3.isAlive():
-				conditionWait = True
-			else:
-				summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: \tCopying from destination 1 to destination 2 still active... Waiting 10sec more...")
-				sleep(10)
-		else:
-			conditionWait = True
-	
 	# count number of files in each folder
 	try:
 		nbFiles = sum([len(files) for r, d, files in os.walk(pathSrc)])
