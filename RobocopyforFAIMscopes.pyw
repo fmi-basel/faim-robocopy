@@ -6,8 +6,8 @@ import filecmp
 from time import sleep
 from Tkinter import Checkbutton, Button, Entry, Label, Tk, StringVar, DoubleVar, IntVar, RIDGE, X, LEFT
 
-
-def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThread, deleteSource, mailAdresse, waitExit):
+# ******************	
+def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThread, deleteSource, mailAdresse, waitExit):
 	print (pathSrc+"; "+pathDst1+"; "+pathDst2+"; "+str(multiThread)+"; "+str(timeInterval)+"; "+str(silentThread)+"; "+str(deleteSource)+"; "+mailAdresse)
 	# test number of destination entered				
 	numdest = 0
@@ -23,26 +23,21 @@ def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThrea
 			pathDst1 = pathDst2
 			pathDst2 = ""
 	# Initialize the summary report
-	summary = "Robocopy Folders:\n\nSource = "+pathSrc+"\n<p>Target1 = "+pathDst1+"\n<p>Target2 = "+pathDst2+"\n<p>"
-	# Define the path for saving the Log file
-	userName = getpass.getuser()
-	if userName == "CVUser":
-		logFilepath = r"C:\\Users\\CVUser\\Desktop\\Robocopy FAIM Logfiles"
-	else:
-		logFilepath = os.path.join(os.environ['HOMESHARE'], 'Desktop')
-		if os.path.exists(logFilepath) == False:
-			logFilepath = os.path.join(os.environ['USERPROFILE'], 'Desktop')
-	logfileName = logFilepath + r"\\Robocopy_Logfile_" + datetime.datetime.now().strftime("%H-%M-%S") + ".html"
-	# Edit summary
-	summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Process started") 
+	globalSummary.set("Robocopy Folders:\n\nSource = "+pathSrc+"\n<p>Target1 = "+pathDst1+"\n<p>Target2 = "+pathDst2+"\n<p>")
+
 	# Starts the copy with Robocopy
+	editSummary("\n<p>%H:%M:%S: Process started")
+	
 	# initialise Threads
 	global Thread1
 	Thread1 = threading.Thread()
 	global Thread2
 	Thread2 = threading.Thread()
+	
+	# Starts while loop which will stop when no change after given time, then condition will be True
 	condition = False
 	checkTime = datetime.datetime.now()
+	
 	try:
 		while condition == False:
 			# ****Start Thread1********
@@ -55,9 +50,9 @@ def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThrea
 					try:
 						Thread1 = threading.Thread(target=worker, args=(pathSrc, pathDst1, silentThread))
 						Thread1.start()
-						summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Copying to destination 1")
+						editSummary("\n<p>%H:%M:%S: Copying to destination 1")
 					except:
-						summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with thread 1")
+						editSummary("\n<p>%H:%M:%S: Problem with thread 1")
 						SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 				else:
 					pass
@@ -80,9 +75,9 @@ def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThrea
 							try:
 								Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2, silentThread))
 								Thread2.start()
-								summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Copying to destination 2")
+								editSummary("\n<p>%H:%M:%S: Copying to destination 2")
 							except:
-								summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with thread 1")
+								editSummary("\n<p>%H:%M:%S: Problem with thread 1")
 								SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 						else:
 							pass
@@ -96,15 +91,15 @@ def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThrea
 							try:
 								Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2, silentThread))
 								Thread2.start()
-								summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Copying to destination2")
+								editSummary("\n<p>%H:%M:%S: Copying to destination2")
 							except:
-								summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with thread 2")
+								editSummary("\n<p>%H:%M:%S: Problem with thread 2")
 								SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 						else:
 							pass
 			
 			# Wait next time-point before comparing folders
-			summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Waiting for "+str(timeInterval)+" min before next Robocopy")
+			editSummary("\n<p>%H:%M:%S: Waiting for "+str(timeInterval)+" min before next Robocopy")
 			sleep(int(timeInterval*60))
 			
 			# Delete files in source folder
@@ -126,7 +121,7 @@ def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThrea
 							else:
 								pass
 				except:
-					summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with deleting files\n")
+					editSummary("\n<p>%H:%M:%S: Problem with deleting files\n")
 					SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 				
 				# Now empty folders are deleted...	
@@ -139,7 +134,7 @@ def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThrea
 						if os.listdir(emptyFolder) == []:
 							shutil.rmtree(emptyFolder)
 				except:
-					summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with deleting folders\n")
+					editSummary("\n<p>%H:%M:%S: Problem with deleting folders\n")
 					
 
 			# Compare source and destination folders to determine whether process should be stopped (i.e. no new file created in Source folder)
@@ -148,22 +143,22 @@ def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThrea
 			timeDiff = exitTime - checkTime
 			if int(timeDiff.total_seconds()) >= int(waitExit*60):
 				checkTime = exitTime
-				summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Checking whether all folders are the same\n")
+				editSummary("\n<p>%H:%M:%S: Checking whether all folders are the same\n")
 				# Starts by checking if dst1 still connected and then compare content of folders
 				if os.path.exists(pathDst1):
 					sameContent = compsubfolders(pathSrc, pathDst1)
 					if sameContent==True:
-						summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: All files in source were found in destination 1")
+						editSummary("\n<p>%H:%M:%S: All files in source were found in destination 1")
 						# Continues with dst2 if it exists
 						if pathDst2 != "":
 							if os.path.exists(pathDst2):
 								sameContent = compsubfolders(pathSrc, pathDst1)
 								if sameContent==True:
-									summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: All files in source were found in destination 2")
+									editSummary("\n<p>%H:%M:%S: All files in source were found in destination 2")
 									# Everything went fine both for dst1 and dst2 and there was no change during time lapse indicated
 									condition = True
 							else:
-								summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with comparing files in dst2\nCould not find dst2 folder")
+								editSummary("\n<p>%H:%M:%S: Problem with comparing files in dst2\nCould not find dst2 folder")
 								SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 								# Everything went fine for dst1, dst2 seems not available anymore
 								condition = True
@@ -171,62 +166,56 @@ def mainProg(pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThrea
 							# Everything went fine for dst1 (no dst2 had been entered by user) and there was no change during time lapse indicated
 							condition = True
 				elif pathDst2 != "":
-					summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with comparing files in dst1\nCould not find dst1 folder\nChecking now dst2\n")
+					editSummary("\n<p>%H:%M:%S: Problem with comparing files in dst1\nCould not find dst1 folder\nChecking now dst2\n")
 					SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 					if os.path.exists(pathDst2):
 						sameContent = compsubfolders(pathSrc, pathDst1)
 						if sameContent==True:
-							summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: All files in source were found in destination 2")
+							editSummary("\n<p>%H:%M:%S: All files in source were found in destination 2")
 							# dst1 could not be found anymore, but there is a copy on dst2 and no change during time lapse indicated
 							condition = True
 					else :
-						summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with comparing files in dst2\nCould not find dst2 either\n")
+						editSummary("\n<p>%H:%M:%S: Problem with comparing files in dst2\nCould not find dst2 either\n")
 						SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 						# Both destinations are not available anymore
 						condition = True
 				else:
-					summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Problem with comparing files in dst1\nCould not find dst1 folder.\nRobocopy process aborted")
+					editSummary("\n<p>%H:%M:%S: Problem with comparing files in dst1\nCould not find dst1 folder.\nRobocopy process aborted")
 					SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 					# dst1 is not available anymore, no dst2 had been entered
 					condition = True
 	
 	# Something went wrong at some unidentified step		
 	except:
-		summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: An error occured.\n")
+		editSummary("\n<p>%H:%M:%S: An error occured.\n")
 		SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 
 	# count number of files in each folder
-	try:
-		nbFiles = sum([len(files) for r, d, files in os.walk(pathSrc)])
-		summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Number of files in source = "+str(nbFiles))
-	except:
-		summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Number of files in source could not be checked")
-	try:
-		nbFiles = sum([len(files) for r, d, files in os.walk(pathDst1)])
-		summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Number of files in destination 1 = "+str(nbFiles))
-	except:
-		summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Number of files in destination 1 could not be checked")
+	countFileNumber(pathSrc)
+	countFileNumber(pathDst1)
 	if pathDst2 != "":
-		try:
-			nbFiles = sum([len(files) for r, d, files in os.walk(pathDst2)])
-			summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Number of files in destination 2 = "+str(nbFiles))
-		except:
-			summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Number of files in destination 2 could not be checked")
-	
-	summary = editSummary(logfileName, summary, "\n<p>%H:%M:%S: Process finished.")
+		countFileNumber(pathDst2)
 	
 	# Send E-mail at the end with the summary
-	summary = re.sub("<p>", "", summary)
+	globalSummary.set(re.sub("<p>", "", globalSummary.get()))
 	dialogSummary.set("Process finished")
-	SendEmail(mailAdresse, "Robocopy Info", summary)
+	SendEmail(mailAdresse, "Robocopy Info", globalSummary.get())
 	
 	# In case e-mail could not be sent, summary is printed in Spyder console
-	print summary
-	
-# FUNCTION: Check if Thread is running
-def TestThreads(number):
-	pass
+	print globalSummary.get()
+	root.destroy()
+	sys.exit()
 
+# ******************	
+# FUNCTION: count number of files in each folder
+def countFileNumber(folder):
+	try:
+		nbFiles = sum([len(files) for r, d, files in os.walk(folder)])
+		editSummary("\n<p>%H:%M:%S: Number of files in "+folder+" = "+str(nbFiles))
+	except:
+		editSummary("\n<p>%H:%M:%S: Number of files in "+folder+" could not be checked")
+
+# ******************	
 # FUNCTION: get User full name
 def get_display_name():
     GetUserNameEx = ctypes.windll.secur32.GetUserNameExW
@@ -238,6 +227,7 @@ def get_display_name():
     GetUserNameEx(NameDisplay, nameBuffer, size)
     return nameBuffer.value
 
+# ******************	
 # FUNCTION: Sends a mail to the user about calculated times
 def SendEmail(mailAdresse, mailObject, mailText):
 	import smtplib
@@ -254,6 +244,7 @@ def SendEmail(mailAdresse, mailObject, mailText):
 	except:
 		print("Could not send e-mail")
 
+# ******************	
 # FUNCTIONs from dialog box
 def chooseSrcDir():
     from tkFileDialog import askdirectory
@@ -273,6 +264,7 @@ def chooseDst2Dir():
     pathDst2 = askdirectory(initialdir=currdir, title="Please select a directory")
     dst2Txt.set(pathDst2)
 
+# ******************
 # FUNCTIOn Do Copy!
 def doCopy():
 	# Checks that a source folder has been selected
@@ -289,10 +281,11 @@ def doCopy():
 		root2.destroy()
 	else:
 		#root.destroy()
-		mainThread = threading.Thread(target = mainProg, args = (srcTxt.get(), dst1Txt.get(), dst2Txt.get(), multiThr.get(), timeInt.get(), silentThr.get(), deleteSrc.get(), mail.get(), timeExit.get()))
+		mainThread = threading.Thread(target = mainProg, args = (root, srcTxt.get(), dst1Txt.get(), dst2Txt.get(), multiThr.get(), timeInt.get(), silentThr.get(), deleteSrc.get(), mail.get(), timeExit.get()))
 		mainThread.start()
-		
-# FUNCTION Cancel		
+
+# ******************	
+# FUNCTION Abort		
 def abort():
 	print ("Dialog Canceled")
 	root.destroy()
@@ -301,20 +294,29 @@ def abort():
 		Thread2.run = False
 	except:
 		pass
+	# Delete all windows consoles
 	for proc in psutil.process_iter():
 		if proc.name() == "conhost.exe":
-			process = psutil.Process(proc.pid)
-			process.terminate()
-			
+			try:
+				 process = psutil.Process(proc.pid)
+				 process.terminate()
+			except:
+				 pass
+	# Stops all Robocopy scripts		
 	for proc in psutil.process_iter():
 		if proc.name() == "Robocopy.exe":
 			process = psutil.Process(proc.pid)
 			process.terminate()
-
+			
+	# Send e-mail to user about status at aborting
+	SendEmail(mail.get(), "Robocopy aborted by user", globalSummary.get())
+	
+	# Kill current running process
 	process = psutil.Process()
 	process.terminate()
 	sys.exit()
-
+	
+# ******************	
 # FUNCTION: Workers / Threads
 def worker(var1, var2, silent):
 	print ("worker started !!!")
@@ -324,6 +326,7 @@ def worker(var1, var2, silent):
 	else:
 		subprocess.call(["robocopy", var1, var2, "/e", "/Z", "/r:0", "/w:30", "/COPY:DT", "/dcopy:T"])
 
+# ******************	
 # FUNCTION compare subdirectories
 def compsubfolders(source, destination):
 	condition = True
@@ -341,31 +344,33 @@ def compsubfolders(source, destination):
 			else:
 				condition = False
 	return condition
-				
-# FUNCTION TO DO: update summary and write logfile
-def writeLogFile(logfileName, text):
+
+
+# ******************	
+# FUNCTION Edit summary
+def editSummary(text):
+	
+	# Edit globalSummary
+	myTime = datetime.datetime.now()
+	globalSummary.set(globalSummary.get() + myTime.strftime(text))
 	try:
 		logfile = open(logfileName, 'w')
-		logfile.write(text)
+		logfile.write(globalSummary.get())
 		logfile.close()
 	except:
 		print ("Problem with logfile: " +logfileName)
-
-# FUNCTION Edit summary
-def editSummary(logfileName, text1, text2):
-	myTime = datetime.datetime.now()
-	text1 += myTime.strftime(text2)
-	writeLogFile(logfileName, text1)
-	text3 = text1
+		
+	# Edit the summary for dialog window
+	textTmp = globalSummary.get()
 	for j in range (10):
-		j = text3.rfind("<p>")
+		j = textTmp.rfind("<p>")
 		if j>=0:
-			text3 = text3[:j]
+			textTmp = textTmp[:j]
 		else:
 			j=0
 			break
-	dialogSummary.set(text1[j:])
-	return text1
+	textTmp = re.sub("<p>", "", globalSummary.get()[j:])
+	dialogSummary.set(textTmp)
 	
 	
 # *******************************
@@ -375,7 +380,16 @@ if sys.executable.endswith("pythonw.exe"):
   sys.stdout = open(os.devnull, "w");
   sys.stderr = open(os.path.join(os.getenv("TEMP"), "stderr-"+os.path.basename(sys.argv[0])), "w")
 
-process = psutil.Process()
+# Define the path for saving the Log file
+userName = getpass.getuser()
+if userName == "CVUser":
+	logFilepath = r"C:\\Users\\CVUser\\Desktop\\Robocopy FAIM Logfiles"
+else:
+	logFilepath = os.path.join(os.environ['HOMESHARE'], 'Desktop')
+	if os.path.exists(logFilepath) == False:
+		logFilepath = os.path.join(os.environ['USERPROFILE'], 'Desktop')
+logfileName = logFilepath + r"\\Robocopy_Logfile_" + datetime.datetime.now().strftime("%H-%M-%S") + ".html"
+
 # Dialog window
 root = Tk()
 root.title("Robocopy FAIM")
@@ -457,7 +471,9 @@ adresseText.config(bg = "light steel blue", fg="black")
 adresseText.pack(padx = 10, anchor="w")
 # Summary
 dialogSummary = StringVar()
+globalSummary = StringVar()
 dialogSummary.set("*** Summary window *****")
+globalSummary.set("")
 sumLabel = Label(root, textvariable=dialogSummary, font = "arial 10")
 sumLabel.config(bg = "light steel blue", fg="navy", justify = LEFT, height = 12)
 sumLabel.pack(padx = 10, pady= 10, anchor="w")
