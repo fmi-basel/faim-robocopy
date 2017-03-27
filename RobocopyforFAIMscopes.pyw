@@ -121,8 +121,7 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 							else:
 								pass
 				except:
-					editSummary("\n<p>%H:%M:%S: Problem with deleting files\n")
-					SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
+					editSummary("\n<p>%H:%M:%S: Not all files could be deleted yet\n")
 				
 				# Now empty folders are deleted...	
 				emptyFolders = []
