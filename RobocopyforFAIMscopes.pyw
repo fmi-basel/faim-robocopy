@@ -105,9 +105,9 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 			# Delete files in source folder
 			if deleteSource:
 				try:
-					for root, directories, files in os.walk(pathSrc):
+					for racine, directories, files in os.walk(pathSrc):
 						for myFile in files:
-							pathS = os.path.join(root, myFile)
+							pathS = os.path.join(racine, myFile)
 							path1 = re.sub(pathSrc, pathDst1, pathS)
 							path2 = re.sub(pathSrc, pathDst2, pathS)
 							if os.path.isfile(path1) & filecmp.cmp(pathS, path1)==True:
@@ -126,8 +126,8 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 				# Now empty folders are deleted...	
 				emptyFolders = []
 				try:
-					for root, directories, files in os.walk(pathSrc):
-						emptyFolders.append(root)
+					for racine, directories, files in os.walk(pathSrc):
+						emptyFolders.append(racine)
 					emptyFolders.sort(reverse = True)
 					for emptyFolder in emptyFolders[:-1]:
 						if os.listdir(emptyFolder) == []:
