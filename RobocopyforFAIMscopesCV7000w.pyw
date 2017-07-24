@@ -8,8 +8,7 @@ from tkinter import Checkbutton, Button, Entry, Label, Tk, StringVar, DoubleVar,
 from tkinter.filedialog import askdirectory
 
 # ******************	
-def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThread, deleteSource, mailAdresse, waitExit):
-	print (pathSrc+"; "+pathDst1+"; "+pathDst2+"; "+str(multiThread)+"; "+str(timeInterval)+"; "+str(silentThread)+"; "+str(deleteSource)+"; "+mailAdresse)
+def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThread, deleteSource, mailAdresse, waitExit, secureM):
 	# test number of destination entered				
 	numdest = 0
 	if (pathDst1 != "") | (pathDst2 != ""):
@@ -49,7 +48,7 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 				if Thread1.isAlive() == False | sameContent == False:
 					checkTime = datetime.datetime.now()
 					try:
-						Thread1 = threading.Thread(target=worker, args=(pathSrc, pathDst1, silentThread))
+						Thread1 = threading.Thread(target=worker, args=(pathSrc, pathDst1, silentThread, secureM))
 						Thread1.start()
 						editSummary("\n<p>%H:%M:%S: Copying to destination 1")
 					except:
@@ -74,7 +73,7 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 						checkTime = datetime.datetime.now()
 						if Thread2.isAlive() == False:
 							try:
-								Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2, silentThread))
+								Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2, silentThread, secureM))
 								Thread2.start()
 								editSummary("\n<p>%H:%M:%S: Copying to destination 2")
 							except:
@@ -90,7 +89,7 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 						checkTime = datetime.datetime.now()
 						if Thread2.isAlive() == False:
 							try:
-								Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2, silentThread))
+								Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2, silentThread, secureM))
 								Thread2.start()
 								editSummary("\n<p>%H:%M:%S: Copying to destination2")
 							except:
@@ -278,7 +277,7 @@ def doCopy():
 		root2.destroy()
 	else:
 		#root.destroy()
-		mainThread = threading.Thread(target = mainProg, args = (root, srcTxt.get(), dst1Txt.get(), dst2Txt.get(), multiThr.get(), timeInt.get(), silentThr.get(), deleteSrc.get(), mail.get(), timeExit.get()))
+		mainThread = threading.Thread(target = mainProg, args = (root, srcTxt.get(), dst1Txt.get(), dst2Txt.get(), multiThr.get(), timeInt.get(), silentThr.get(), deleteSrc.get(), mail.get(), timeExit.get(), secureMode.get()))
 		mainThread.start()
 
 # ******************	
@@ -315,13 +314,18 @@ def abort():
 	
 # ******************	
 # FUNCTION: Workers / Threads
-def worker(var1, var2, silent):
-	print ("worker started !!!")
-	if silent==0:
-		FNULL = open(os.devnull, 'w')
-		subprocess.call(["robocopy", var1, var2, "/e", "/COPY:DT"], stdout=FNULL, stderr=subprocess.STDOUT)
-	else:
-		subprocess.call(["robocopy", var1, var2, "/e", "/COPY:DT"])
+def worker(var1, var2, silent, secureM):
+    paramRobocopy = ["robocopy", var1, var2, "/e", "/COPY:DT"]
+    if secureM == 1:
+        paramRobocopy.append("/r:0")
+        paramRobocopy.append("/w:30")
+        paramRobocopy.append("/dcopy:T")
+        paramRobocopy.append("/Z")        
+    if silent==0:
+        FNULL = open(os.devnull, 'w')
+        subprocess.call(paramRobocopy, stdout=FNULL, stderr=subprocess.STDOUT)
+    else:
+        subprocess.call(paramRobocopy)
 
 # ******************	
 # FUNCTION compare subdirectories
@@ -424,6 +428,8 @@ dst2TxtLabel = Label(root, textvariable = dst2Txt, font = "arial 10")
 dst2TxtLabel.config(bg = "light steel blue")
 dst2TxtLabel.pack(padx = 10, anchor = "w")
 # Options checkboxes
+secureMode = IntVar()
+secureMode.set(1)
 multiThr = IntVar()
 multiThr.set(0)
 multiCheckBox = Checkbutton(root, text="Copy both destinations in parallel", wraplength=200, variable=multiThr)
