@@ -1,0 +1,3 @@
+[submodule "faim-common-utils"]
+	path = faim-common-utils
+	url = https://github.com/fmi-basel/faim-common-utils.git
