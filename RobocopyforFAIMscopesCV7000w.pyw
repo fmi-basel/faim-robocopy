@@ -379,13 +379,13 @@ if sys.executable.endswith("pythonw.exe"):
 
 # Define the path for saving the Log file
 userName = getpass.getuser()
-if userName == "CVUser":
-	logFilepath = r"C:\\Users\\CVUser\\Desktop\\Robocopy FAIM Logfiles"
-else:
-	logFilepath = os.path.join(os.environ['HOMESHARE'], 'Desktop')
-	if os.path.exists(logFilepath) == False:
-		logFilepath = os.path.join(os.environ['USERPROFILE'], 'Desktop')
-logfileName = logFilepath + r"\\Robocopy_Logfile_" + datetime.datetime.now().strftime("%H-%M-%S") + ".html"
+homeShare = os.environ.get('HOMESHARE')
+userDirectory = os.path.expanduser('~')
+logFilepath = os.path.join(userDirectory, 'Desktop')
+if homeShare and os.path.exists(os.path.join(homeShare, 'Desktop')):
+    logFilepath = os.path.join(homeShare, 'Desktop')
+
+logfileName = os.path.join(logFilepath, "Robocopy_Logfile_" + datetime.datetime.now().strftime("%H-%M-%S") + ".html")
 
 # Dialog window
 root = Tk()
