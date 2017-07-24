@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import ctypes, datetime, getpass, os, psutil, re, subprocess, sys, shutil, threading, tkMessageBox
+import ctypes, datetime, getpass, os, psutil, re, subprocess, sys, shutil, threading
 from filecmp import dircmp
 import filecmp
 from time import sleep
-from Tkinter import Checkbutton, Button, Entry, Label, Tk, StringVar, DoubleVar, IntVar, RIDGE, X, LEFT
+from tkinter import Checkbutton, Button, Entry, Label, Tk, StringVar, DoubleVar, IntVar, RIDGE, X, LEFT, messagebox
+from tkinter.filedialog import askdirectory
 
 # ******************	
 def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThread, deleteSource, mailAdresse, waitExit):
@@ -201,7 +202,7 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 	SendEmail(mailAdresse, "Robocopy Info", globalSummary.get())
 	
 	# In case e-mail could not be sent, summary is printed in Spyder console
-	print globalSummary.get()
+	#print globalSummary.get()
 	root.destroy()
 	sys.exit()
 
@@ -246,19 +247,16 @@ def SendEmail(mailAdresse, mailObject, mailText):
 # ******************	
 # FUNCTIONs from dialog box
 def chooseSrcDir():
-    from tkFileDialog import askdirectory
     global pathSrc
     pathSrc = askdirectory(initialdir=currdir, title="Please select a directory")
     srcTxt.set(pathSrc)
 				
 def chooseDst1Dir():
-    from tkFileDialog import askdirectory
     global pathDst1
     pathDst1 = askdirectory(initialdir=currdir, title="Please select a directory")
     dst1Txt.set(pathDst1)
 
 def chooseDst2Dir():
-    from tkFileDialog import askdirectory
     global pathDst2
     pathDst2 = askdirectory(initialdir=currdir, title="Please select a directory")
     dst2Txt.set(pathDst2)
@@ -270,13 +268,13 @@ def doCopy():
 	if srcTxt.get() == "":
 	    root2 = Tk()
 	    root2.withdraw()
-	    tkMessageBox.showerror(title="Problem", message="You must select a source folder")
+	    messagebox.showerror(title="Problem", message="You must select a source folder")
 	    root2.destroy()
 	# Checks that at least one destination folder has been selected				
 	elif (dst1Txt.get() == "") & (dst2Txt.get() == ""):
 		root2 = Tk()
 		root2.withdraw()
-		tkMessageBox.showerror(title="Problem", message="You must select at least one destination folder")
+		messagebox.showerror(title="Problem", message="You must select at least one destination folder")
 		root2.destroy()
 	else:
 		#root.destroy()
