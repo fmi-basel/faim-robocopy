@@ -4,7 +4,7 @@ import ctypes, datetime, getpass, os, psutil, re, subprocess, sys, shutil, threa
 from filecmp import dircmp
 import filecmp
 from time import sleep
-from tkinter import Checkbutton, Button, Entry, Label, Tk, StringVar, DoubleVar, IntVar, RIDGE, X, LEFT, messagebox
+from tkinter import LabelFrame, Frame, Checkbutton, Button, Entry, Label, Tk, StringVar, DoubleVar, IntVar, RIDGE, RAISED, SUNKEN, X, W, LEFT, messagebox
 from tkinter.filedialog import askdirectory
 
 # ******************	
@@ -373,10 +373,13 @@ def editSummary(text):
 	textTmp = re.sub("<p>", "", globalSummary.get()[j:])
 	dialogSummary.set(textTmp)
 	
-	
+    
+"""    
 # *******************************
 # DIALOG WINDOW
 # *******************************
+"""
+
 if sys.executable.endswith("pythonw.exe"):
   sys.stdout = open(os.devnull, "w");
   sys.stderr = open(os.path.join(os.getenv("TEMP"), "stderr-"+os.path.basename(sys.argv[0])), "w")
@@ -400,100 +403,136 @@ try:
 	mailAdresse = userName[1][1:]+"."+userName[0]+"@fmi.ch"
 except:
 	mailAdresse = "FirstName.LastName@fmi.ch"
+ 
+"""
+MAIN FRAME
+"""
+frame1 = Frame(root, width=780, height=510)
+frame1.pack()
+
+"""
+Frame for folder selection
+"""
+frameFolders = LabelFrame(frame1, width=380, height=230, text = "Folder Selection", borderwidth=2, relief = RAISED)
+frameFolders.pack()
+frameFolders.place(x=5, y=5) 
 # Source folder selection
 srcTxt = StringVar()
 srcTxt.set("")
-srcButton = Button(root, text = 'Source directory', overrelief=RIDGE, font = "arial 10",  command=chooseSrcDir)
-srcButton.config(bg = "light steel blue", fg="black")
-srcButton.pack(padx = 10, pady=5, fill=X)
-srcTxtLabel = Label(root, textvariable = srcTxt, font = "arial 10")
-srcTxtLabel.config(bg = "light steel blue")
-srcTxtLabel.pack(padx = 10, anchor = "w")
+srcButton = Button(frameFolders, text = 'Source directory', overrelief=SUNKEN, command=chooseSrcDir, width=20)
+srcButton.pack()
+srcButton.place(x=5, y=5)
+srcTxtLabel = Label(frameFolders, textvariable = srcTxt, width = 50, anchor = W)
+srcTxtLabel.pack()
+srcTxtLabel.place(x=5, y=35)
 # Destination 1 folder selection
 dst1Txt = StringVar()
 dst1Txt.set("")
-dst1Button = Button(root, text = 'Destination 1 directory', overrelief=RIDGE, font = "arial 10", command=chooseDst1Dir)
-dst1Button.config(bg = "light steel blue", fg="black")
-dst1Button.pack(padx = 10, pady=5, fill=X)
-dst1TxtLabel = Label(root, textvariable = dst1Txt, font = "arial 10")
-dst1TxtLabel.config(bg = "light steel blue")
-dst1TxtLabel.pack(padx = 10, anchor = "w")
+dst1Button = Button(frameFolders, text = 'Destination 1 directory', overrelief=SUNKEN, command=chooseDst1Dir, width=20)
+dst1Button.pack()
+dst1Button.place(x=5, y=70)
+dst1TxtLabel = Label(frameFolders, textvariable = dst1Txt, width = 50, anchor = W)
+dst1TxtLabel.pack()
+dst1TxtLabel.place(x=5, y=100)
 # Destination 2 folder selection
 dst2Txt = StringVar()
 dst2Txt.set("")
-dst2Button = Button(root, text = 'Destination 2 directory', overrelief=RIDGE, font = "arial 10", command=chooseDst2Dir)
-dst2Button.config(bg = "light steel blue")
-dst2Button.pack(padx = 10, pady=5, fill=X)
-dst2TxtLabel = Label(root, textvariable = dst2Txt, font = "arial 10")
-dst2TxtLabel.config(bg = "light steel blue")
-dst2TxtLabel.pack(padx = 10, anchor = "w")
+dst2Button = Button(frameFolders, text = 'Destination 2 directory', overrelief=SUNKEN, command=chooseDst2Dir, width=20)
+dst2Button.pack()
+dst2Button.place(x=5, y=135)
+dst2TxtLabel = Label(frameFolders, textvariable = dst2Txt, width = 50, anchor = W)
+dst2TxtLabel.pack()
+dst2TxtLabel.place(x=5, y=165)
+
+"""
+Frame for Option selection
+"""
+frameOptions = LabelFrame(frame1, width=380, height=210, text = "Option Selection", borderwidth=2, relief = RAISED)
+frameOptions.pack()
+frameOptions.place(x=5, y=245)
+
 # Options checkboxes
+
 secureMode = IntVar()
 secureMode.set(1)
-secureMCheckBox = Checkbutton(root, text="Secure Mode (slower)", wraplength=200, variable=secureMode)
-secureMCheckBox.config(bg = "light steel blue", fg="black", justify = LEFT)
-secureMCheckBox.pack(padx = 10, pady=5, anchor="w")
+secureMCheckBox = Checkbutton(frameOptions, text="Secure Mode (slower)", wraplength=200, variable=secureMode, anchor=W)
+secureMCheckBox.pack()
+secureMCheckBox.place(x=5,y=5)
+
 multiThr = IntVar()
 multiThr.set(0)
-multiCheckBox = Checkbutton(root, text="Copy both destinations in parallel", wraplength=200, variable=multiThr)
-multiCheckBox.config(bg = "light steel blue", fg="black", justify = LEFT)
-multiCheckBox.pack(padx = 10, pady=5, anchor="w")
+multiCheckBox = Checkbutton(frameOptions, text="Copy both destinations in parallel", wraplength=200, variable=multiThr, anchor=W)
+multiCheckBox.pack()
+multiCheckBox.place(x=5, y=30)
+
 silentThr = IntVar()
 silentThr.set(0)
-silentCheckBox = Checkbutton(root, text="Show Robocopy console", wraplength=200, variable=silentThr)
-silentCheckBox.config(bg = "light steel blue", fg="black", justify = LEFT)
-silentCheckBox.pack(padx = 10, pady=5, anchor="w")
+silentCheckBox = Checkbutton(frameOptions, text="Show Robocopy console", wraplength=200, variable=silentThr, anchor=W)
+silentCheckBox.pack()
+silentCheckBox.place(x=5, y=55)
+
 deleteSrc = IntVar()
 deleteSrc.set(0)
-delCheckBox = Checkbutton(root, text="Delete files in source folder after copy", wraplength=200, variable=deleteSrc)
-delCheckBox.config(bg = "light steel blue", fg="black", justify = LEFT)
-delCheckBox.pack(padx = 10, pady=5, anchor="w")
+delCheckBox = Checkbutton(frameOptions, text="Delete files in source folder after copy", wraplength=200, variable=deleteSrc, anchor=W)
+delCheckBox.pack()
+delCheckBox.place(x=5, y=80)
+
 # Time-lapse information
 timeInt = DoubleVar()
 timeInt.set(0.5)
-tiLabel = Label(root, text="Time interval between Robocopy processes (min):", font = "arial 10")
-tiLabel.config(bg = "light steel blue", fg="black")
-tiLabel.pack(padx = 10, anchor="w")
-tiText = Entry(root, width=6, justify=LEFT, textvariable = timeInt)
-tiText.config(bg = "light steel blue", fg="black")
-tiText.pack(padx = 10, anchor="w")
+tiLabel = Label(frameOptions, text="Time interval between Robocopy processes (min):", anchor=W)
+tiLabel.pack()
+tiLabel.place(x=5, y=105)
+tiText = Entry(frameOptions, width=6, textvariable = timeInt)
+tiText.pack()
+tiText.place(x=280, y=107)
+
 # Time-Exit information
 timeExit = DoubleVar()
 timeExit.set(5)
-tiexLabel = Label(root, text="Time for exiting if no change in folders (min):", font = "arial 10")
-tiexLabel.config(bg = "light steel blue", fg="black")
-tiexLabel.pack(padx = 10, anchor="w")
-tiexText = Entry(root, width=6, justify=LEFT, textvariable = timeExit)
-tiexText.config(bg = "light steel blue", fg="black")
-tiexText.pack(padx = 10, anchor="w")
+tiexLabel = Label(frameOptions, text="Time for exiting if no change in folders (min):", anchor=W)
+tiexLabel.pack()
+tiexLabel.place(x=5, y=130)
+
+tiexText = Entry(frameOptions, width=6, textvariable = timeExit)
+tiexText.pack()
+tiexText.place(x=280, y=132)
+
 # E-mail information
 mail = StringVar()
 mail.set(mailAdresse)
-sendLabel = Label(root, text="Send Summary to:", font = "arial 10")
-sendLabel.config(bg = "light steel blue", fg="black")
-sendLabel.pack(padx = 10, pady= 5, anchor="w")
-adresseText = Entry(root, justify=LEFT, width = 25, textvariable = mail)
-adresseText.config(bg = "light steel blue", fg="black")
-adresseText.pack(padx = 10, anchor="w")
+sendLabel = Label(frameOptions, text="Send Summary to:", anchor=W)
+sendLabel.pack()
+sendLabel.place(x=5, y=155)
+adresseText = Entry(frameOptions, justify=LEFT, width = 25, textvariable = mail)
+adresseText.pack()
+adresseText.place(x=115, y=157)
+
+"""
+Frame for Summary
+"""
+frameSummary = LabelFrame(frame1, width=380, height=450, text = "Summary", borderwidth=2, relief = RAISED)
+frameSummary.pack()
+frameSummary.place(x=395, y=5)
+
 # Summary
 dialogSummary = StringVar()
 globalSummary = StringVar()
 dialogSummary.set("*** Summary window *****")
 globalSummary.set("")
-sumLabel = Label(root, textvariable=dialogSummary, font = "arial 10")
-sumLabel.config(bg = "light steel blue", fg="navy", justify = LEFT, height = 12)
-sumLabel.pack(padx = 10, pady= 10, anchor="w")
-# Space
-spaceLabel = Label(root, text=" ", font = "arial 10")
-spaceLabel.config(bg = "light steel blue", fg="black")
-spaceLabel.pack(padx = 15, anchor="w")
+sumLabel = Label(frameSummary, textvariable=dialogSummary, justify=LEFT, anchor=W)
+sumLabel.pack()
+sumLabel.place(x=5, y=5)
+
 # Do Copy and Cancel buttons
-doCopyButton = Button(root, text = 'Do Copy !', width = 8, overrelief=RIDGE, font = "arial 10", command = doCopy)
-doCopyButton.config(bg = "lime green", fg="black")
-doCopyButton.pack(side = "left", padx = 10, pady=5)
-cancelButton = Button(root, text = 'Abort', width = 8, overrelief=RIDGE, font = "arial 10", command = abort)
-cancelButton.config(bg = "red", fg="black")
-cancelButton.pack(side = "right", padx = 10, pady=5)
-root.config(bg="light steel blue")
+doCopyButton = Button(frame1, text = 'Do Copy !', width = 8, overrelief=RIDGE, font = "arial 10", command = doCopy)
+doCopyButton.config(bg = "yellow green", fg="black")
+doCopyButton.pack()
+doCopyButton.place(x=10, y=470)
+cancelButton = Button(frame1, text = 'Abort', width = 8, overrelief=RIDGE, font = "arial 10", command = abort)
+cancelButton.config(bg = "tomato", fg="black")
+cancelButton.pack()
+cancelButton.place(x=100, y=470)
+
 # Show Dialog Window
 root.mainloop()
