@@ -4,7 +4,7 @@ import ctypes, datetime, getpass, os, psutil, re, subprocess, sys, shutil, threa
 from filecmp import dircmp
 import filecmp
 from time import sleep
-from tkinter import LabelFrame, Frame, Checkbutton, Button, Entry, Label, Tk, StringVar, DoubleVar, IntVar, RIDGE, RAISED, SUNKEN, X, W, LEFT, messagebox
+from tkinter import LabelFrame, Frame, Checkbutton, Button, Entry, Label, Tk, StringVar, DoubleVar, IntVar, RIDGE, RAISED, SUNKEN, W, LEFT, messagebox
 from tkinter.filedialog import askdirectory
 
 # ******************	
@@ -283,34 +283,35 @@ def doCopy():
 # ******************	
 # FUNCTION Abort		
 def abort():
-	print ("Dialog Canceled")
-	root.destroy()
-	try:
-		Thread1.run = False
-		Thread2.run = False
-	except:
-		pass
-	# Delete all windows consoles
-	for proc in psutil.process_iter():
-		if proc.name() == "conhost.exe":
-			try:
-				 process = psutil.Process(proc.pid)
-				 process.terminate()
-			except:
-				 pass
-	# Stops all Robocopy scripts		
-	for proc in psutil.process_iter():
-		if proc.name() == "Robocopy.exe":
-			process = psutil.Process(proc.pid)
-			process.terminate()
+    print ("Dialog Canceled")
+    root.destroy()
+    try:
+        Thread1.run = False
+        Thread2.run = False
+    except:
+        pass
+    # Delete all windows consoles
+    for proc in psutil.process_iter():
+        if proc.name() == "conhost.exe":
+            try:
+                process = psutil.Process(proc.pid)
+                process.terminate()
+            except:
+                pass
+    # Stops all Robocopy scripts		
+    for proc in psutil.process_iter():
+        if proc.name() == "Robocopy.exe":
+            process = psutil.Process(proc.pid)
+            process.terminate()
 			
-	# Send e-mail to user about status at aborting
-	SendEmail(mail.get(), "Robocopy aborted by user", globalSummary.get())
+    # Send e-mail to user about status at aborting
+    globalSummary.set(re.sub("<p>", "", globalSummary.get()))
+    SendEmail(mail.get(), "Robocopy aborted by user", globalSummary.get())
 	
 	# Kill current running process
-	process = psutil.Process()
-	process.terminate()
-	sys.exit()
+    process = psutil.Process()
+    process.terminate()
+    sys.exit()
 	
 # ******************	
 # FUNCTION: Workers / Threads
