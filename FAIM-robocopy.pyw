@@ -56,7 +56,7 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 						SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 				else:
 					pass
-					
+
 			# Start second thread if pathDst2 exists
 			if pathDst2 != "":
 				if multiThread == 0:
@@ -97,11 +97,11 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 								SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 						else:
 							pass
-			
+
 			# Wait next time-point before comparing folders
 			editSummary("\n<p>%H:%M:%S: Waiting for "+str(timeInterval)+" min before next Robocopy")
 			sleep(int(timeInterval*60))
-			
+
 			# Delete files in source folder
 			if deleteSource:
 				try:
@@ -110,19 +110,36 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 							pathS = os.path.join(racine, myFile)
 							path1 = re.sub(pathSrc, pathDst1, pathS)
 							path2 = re.sub(pathSrc, pathDst2, pathS)
-							if os.path.isfile(path1) & filecmp.cmp(pathS, path1)==True:
-								if pathDst2 != "":
-									if os.path.isfile(path2) & filecmp.cmp(pathS, path2)==True:
-										os.remove(pathS)
+							try:
+								if os.path.isfile(path1) & filecmp.cmp(pathS, path1)==True:
+									if pathDst2 != "":
+										if Thread2.isAlive() == False & os.path.isfile(path2) & filecmp.cmp(pathS, path2)==True:
+											try:
+												os.remove(pathS)
+											except:
+												editSummary("\n<p>%H:%M:%S: Not all files could be deleted yet\n")
+										else:
+												pass
 									else:
-										pass
+										try:
+											os.remove(pathS)
+										except:
+											editSummary("\n<p>%H:%M:%S: Not all files could be deleted yet\n")
 								else:
-									os.remove(pathS)
-							else:
+									pass
+							except:
 								pass
+							"""
+							except OSError as err:
+								editSummary("\n<p>%H:%M:%S: Problem with deleting files: OS error: {0}".format(err))
+							except ValueError:
+								editSummary("\n<p>%H:%M:%S: Problem with deleting files: could not convert data to an integer.")
+							except:
+								editSummary("\n<p>%H:%M:%S: Problem with deleting files: Unexpected error:", sys.exc_info()[0])
+							"""
 				except:
-					editSummary("\n<p>%H:%M:%S: Not all files could be deleted yet\n")
-				
+					pass
+
 				# Now empty folders are deleted...	
 				emptyFolders = []
 				try:
@@ -134,7 +151,7 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 							shutil.rmtree(emptyFolder)
 				except:
 					editSummary("\n<p>%H:%M:%S: Problem with deleting folders\n")
-					
+
 
 			# Compare source and destination folders to determine whether process should be stopped (i.e. no new file created in Source folder)
 			# If no new file or folder was created since the beginning of the robocopy, then the condition is true and loop is terminated (= exit)
@@ -351,7 +368,6 @@ def compsubfolders(source, destination):
 # ******************	
 # FUNCTION Edit summary
 def editSummary(text):
-	
 	# Edit globalSummary
 	myTime = datetime.datetime.now()
 	globalSummary.set(globalSummary.get() + myTime.strftime(text))
@@ -521,7 +537,7 @@ dialogSummary = StringVar()
 globalSummary = StringVar()
 dialogSummary.set("*** Summary window *****")
 globalSummary.set("")
-sumLabel = Label(frameSummary, textvariable=dialogSummary, justify=LEFT, anchor=W)
+sumLabel = Label(frameSummary, textvariable=dialogSummary, justify=LEFT, anchor=W, width=50)
 sumLabel.pack()
 sumLabel.place(x=5, y=5)
 
