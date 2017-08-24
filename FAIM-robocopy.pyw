@@ -177,29 +177,29 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 								editSummary("\n<p>%H:%M:%S: Problem with comparing files in dst2\nCould not find dst2 folder")
 								SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 								# Everything went fine for dst1, dst2 seems not available anymore
-								condition = True
+								#condition = True
 						else :
 							# Everything went fine for dst1 (no dst2 had been entered by user) and there was no change during time lapse indicated
 							condition = True
-				elif pathDst2 != "":
-					editSummary("\n<p>%H:%M:%S: Problem with comparing files in dst1\nCould not find dst1 folder\nChecking now dst2\n")
-					SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
-					if os.path.exists(pathDst2):
-						sameContent = compsubfolders(pathSrc, pathDst2)
-						if sameContent==True:
-							editSummary("\n<p>%H:%M:%S: All files in source were found in destination 2")
-							# dst1 could not be found anymore, but there is a copy on dst2 and no change during time lapse indicated
-							condition = True
-					else :
-						editSummary("\n<p>%H:%M:%S: Problem with comparing files in dst2\nCould not find dst2 either\n")
-						SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
-						# Both destinations are not available anymore
-						condition = True
+#				elif pathDst2 != "":
+#					editSummary("\n<p>%H:%M:%S: Problem with comparing files in dst1\nCould not find dst1 folder\nChecking now dst2\n")
+#					SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
+#					if os.path.exists(pathDst2):
+#						sameContent = compsubfolders(pathSrc, pathDst2)
+#						if sameContent==True:
+#							editSummary("\n<p>%H:%M:%S: All files in source were found in destination 2")
+#							# dst1 could not be found anymore, but there is a copy on dst2 and no change during time lapse indicated
+#							#condition = True
+#					else :
+#						editSummary("\n<p>%H:%M:%S: Problem with comparing files in dst2\nCould not find dst2 either\n")
+#						SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
+#						# Both destinations are not available anymore
+#						#condition = True
 				else:
-					editSummary("\n<p>%H:%M:%S: Problem with comparing files in dst1\nCould not find dst1 folder.\nRobocopy process aborted")
+					editSummary("\n<p>%H:%M:%S: Problem with comparing files in dst1\nCould not find dst1 folder.")
 					SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 					# dst1 is not available anymore, no dst2 had been entered
-					condition = True
+					#condition = True
 	
 	# Something went wrong at some unidentified step		
 	except:
