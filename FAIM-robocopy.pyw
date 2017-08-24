@@ -113,7 +113,7 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 							try:
 								if os.path.isfile(path1) & filecmp.cmp(pathS, path1)==True:
 									if pathDst2 != "":
-										if Thread2.isAlive() == False & os.path.isfile(path2) & filecmp.cmp(pathS, path2)==True:
+										if os.path.isfile(path2) & filecmp.cmp(pathS, path2)==True:
 											try:
 												os.remove(pathS)
 											except:
