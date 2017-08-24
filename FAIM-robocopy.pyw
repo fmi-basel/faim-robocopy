@@ -168,7 +168,7 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 						# Continues with dst2 if it exists
 						if pathDst2 != "":
 							if os.path.exists(pathDst2):
-								sameContent = compsubfolders(pathSrc, pathDst1)
+								sameContent = compsubfolders(pathSrc, pathDst2)
 								if sameContent==True:
 									editSummary("\n<p>%H:%M:%S: All files in source were found in destination 2")
 									# Everything went fine both for dst1 and dst2 and there was no change during time lapse indicated
@@ -185,7 +185,7 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 					editSummary("\n<p>%H:%M:%S: Problem with comparing files in dst1\nCould not find dst1 folder\nChecking now dst2\n")
 					SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 					if os.path.exists(pathDst2):
-						sameContent = compsubfolders(pathSrc, pathDst1)
+						sameContent = compsubfolders(pathSrc, pathDst2)
 						if sameContent==True:
 							editSummary("\n<p>%H:%M:%S: All files in source were found in destination 2")
 							# dst1 could not be found anymore, but there is a copy on dst2 and no change during time lapse indicated
