@@ -9,7 +9,7 @@ from tkinter.filedialog import askdirectory
 
 # ******************	
 def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThread, deleteSource, mailAdresse, waitExit, secureM):
-	# test number of destination entered				
+	# test number of destination entered
 	numdest = 0
 	if (pathDst1 != "") | (pathDst2 != ""):
 		numdest = 1
@@ -24,6 +24,11 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 			pathDst2 = ""
 	# Initialize the summary report
 	globalSummary.set("Robocopy Folders:\n\nSource = "+pathSrc+"\n<p>Target1 = "+pathDst1+"\n<p>Target2 = "+pathDst2+"\n<p>")
+	# write source and destination folders in txt file for next use
+	target = open(paramFile, 'w')
+	target.write(pathSrc+";"+pathDst1+";"+pathDst2)
+	target.close()
+
 
 	# Starts the copy with Robocopy
 	editSummary("\n<p>%H:%M:%S: Process started")
@@ -181,27 +186,13 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 						else :
 							# Everything went fine for dst1 (no dst2 had been entered by user) and there was no change during time lapse indicated
 							condition = True
-#				elif pathDst2 != "":
-#					editSummary("\n<p>%H:%M:%S: Problem with comparing files in dst1\nCould not find dst1 folder\nChecking now dst2\n")
-#					SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
-#					if os.path.exists(pathDst2):
-#						sameContent = compsubfolders(pathSrc, pathDst2)
-#						if sameContent==True:
-#							editSummary("\n<p>%H:%M:%S: All files in source were found in destination 2")
-#							# dst1 could not be found anymore, but there is a copy on dst2 and no change during time lapse indicated
-#							#condition = True
-#					else :
-#						editSummary("\n<p>%H:%M:%S: Problem with comparing files in dst2\nCould not find dst2 either\n")
-#						SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
-#						# Both destinations are not available anymore
-#						#condition = True
 				else:
 					editSummary("\n<p>%H:%M:%S: Problem with comparing files in dst1\nCould not find dst1 folder.")
 					SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 					# dst1 is not available anymore, no dst2 had been entered
 					#condition = True
 	
-	# Something went wrong at some unidentified step		
+	# Something went wrong at some unidentified step
 	except:
 		editSummary("\n<p>%H:%M:%S: An error occured.\n")
 		SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
@@ -217,8 +208,6 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 	dialogSummary.set("Process finished")
 	SendEmail(mailAdresse, "Robocopy Info", globalSummary.get())
 	
-	# In case e-mail could not be sent, summary is printed in Spyder console
-	#print globalSummary.get()
 	root.destroy()
 	sys.exit()
 
@@ -264,18 +253,21 @@ def SendEmail(mailAdresse, mailObject, mailText):
 # FUNCTIONs from dialog box
 def chooseSrcDir():
     global pathSrc
-    pathSrc = askdirectory(initialdir=currdir, title="Please select a directory")
+    pathSrc = askdirectory(initialdir=params[0], title="Please select a directory")
     srcTxt.set(pathSrc)
+    params[0]=pathSrc
 				
 def chooseDst1Dir():
     global pathDst1
-    pathDst1 = askdirectory(initialdir=currdir, title="Please select a directory")
+    pathDst1 = askdirectory(initialdir=params[1], title="Please select a directory")
     dst1Txt.set(pathDst1)
+    params[1]=pathDst1
 
 def chooseDst2Dir():
     global pathDst2
-    pathDst2 = askdirectory(initialdir=currdir, title="Please select a directory")
+    pathDst2 = askdirectory(initialdir=params[2], title="Please select a directory")
     dst2Txt.set(pathDst2)
+    params[2]=pathDst2
 
 # ******************
 # FUNCTIOn Do Copy!
@@ -298,7 +290,7 @@ def doCopy():
 		mainThread.start()
 
 # ******************	
-# FUNCTION Abort		
+# FUNCTION Abort
 def abort():
     print ("Dialog Canceled")
     root.destroy()
@@ -389,13 +381,7 @@ def editSummary(text):
 			break
 	textTmp = re.sub("<p>", "", globalSummary.get()[j:])
 	dialogSummary.set(textTmp)
-	
-    
-"""    
-# *******************************
-# DIALOG WINDOW
-# *******************************
-"""
+
 
 if sys.executable.endswith("pythonw.exe"):
   sys.stdout = open(os.devnull, "w");
@@ -411,7 +397,19 @@ if homeShare and os.path.exists(os.path.join(homeShare, 'Desktop')):
 
 logfileName = os.path.join(logFilepath, "Robocopy_Logfile_" + datetime.datetime.now().strftime("%H-%M-%S") + ".html")
 
-# Dialog window
+params = ["", "", ""]
+paramFile = os.path.join(userDirectory, 'param.txt')
+if os.path.isfile(paramFile):
+	target = open(paramFile, 'r')
+	params = target.read()
+	target.close()
+	params = params.split(";")
+
+"""
+# *******************************
+# DIALOG WINDOW
+# *******************************
+"""
 root = Tk()
 root.title("Robocopy FAIM")
 currdir = os.getcwd()
@@ -420,7 +418,7 @@ try:
 	mailAdresse = userName[1][1:]+"."+userName[0]+"@fmi.ch"
 except:
 	mailAdresse = "FirstName.LastName@fmi.ch"
- 
+
 """
 MAIN FRAME
 """
@@ -435,7 +433,7 @@ frameFolders.pack()
 frameFolders.place(x=5, y=5) 
 # Source folder selection
 srcTxt = StringVar()
-srcTxt.set("")
+srcTxt.set(params[0])
 srcButton = Button(frameFolders, text = 'Source directory', overrelief=SUNKEN, command=chooseSrcDir, width=20)
 srcButton.pack()
 srcButton.place(x=5, y=5)
@@ -444,7 +442,7 @@ srcTxtLabel.pack()
 srcTxtLabel.place(x=5, y=35)
 # Destination 1 folder selection
 dst1Txt = StringVar()
-dst1Txt.set("")
+dst1Txt.set(params[1])
 dst1Button = Button(frameFolders, text = 'Destination 1 directory', overrelief=SUNKEN, command=chooseDst1Dir, width=20)
 dst1Button.pack()
 dst1Button.place(x=5, y=70)
@@ -453,7 +451,7 @@ dst1TxtLabel.pack()
 dst1TxtLabel.place(x=5, y=100)
 # Destination 2 folder selection
 dst2Txt = StringVar()
-dst2Txt.set("")
+dst2Txt.set(params[2])
 dst2Button = Button(frameFolders, text = 'Destination 2 directory', overrelief=SUNKEN, command=chooseDst2Dir, width=20)
 dst2Button.pack()
 dst2Button.place(x=5, y=135)
