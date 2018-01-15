@@ -372,7 +372,7 @@ def editSummary(text):
 		
 	# Edit the summary for dialog window
 	textTmp = globalSummary.get()
-	for j in range (25):
+	for j in range (23):
 		j = textTmp.rfind("<p>")
 		if j>=0:
 			textTmp = textTmp[:j]
