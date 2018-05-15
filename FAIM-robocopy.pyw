@@ -6,9 +6,10 @@ import filecmp
 from time import sleep
 from tkinter import LabelFrame, Frame, Checkbutton, Button, Entry, Label, Tk, StringVar, DoubleVar, IntVar, RIDGE, RAISED, SUNKEN, W, LEFT, messagebox
 from tkinter.filedialog import askdirectory
+from fnmatch import fnmatch
 
 # ******************	
-def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThread, deleteSource, mailAdresse, waitExit, secureM):
+def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silentThread, deleteSource, mailAdresse, waitExit, secureM, omitFile):
 	# test number of destination entered
 	numdest = 0
 	if (pathDst1 != "") | (pathDst2 != ""):
@@ -47,13 +48,13 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 		while condition == False:
 			# ****Start Thread1********
 			# Checks first that Thread1 is not running, otherwise skip the step.
-			sameContent = compsubfolders(pathSrc, pathDst1)
+			sameContent = compsubfolders(pathSrc, pathDst1, omitFile)
 			if sameContent == False:
 				checkTime = datetime.datetime.now()
 				if Thread1.isAlive() == False | sameContent == False:
 					checkTime = datetime.datetime.now()
 					try:
-						Thread1 = threading.Thread(target=worker, args=(pathSrc, pathDst1, silentThread, secureM))
+						Thread1 = threading.Thread(target=worker, args=(pathSrc, pathDst1, silentThread, secureM, omitFile))
 						Thread1.start()
 						editSummary("\n<p>%H:%M:%S: Copying to destination 1")
 					except:
@@ -73,12 +74,12 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 						else:
 							sleep(10)	
 					# Start Thread2 now that Thread1 is done
-					sameContent = compsubfolders(pathSrc, pathDst2)
+					sameContent = compsubfolders(pathSrc, pathDst2, omitFile)
 					if sameContent == False:
 						checkTime = datetime.datetime.now()
 						if Thread2.isAlive() == False:
 							try:
-								Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2, silentThread, secureM))
+								Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2, silentThread, secureM, omitFile))
 								Thread2.start()
 								editSummary("\n<p>%H:%M:%S: Copying to destination 2")
 							except:
@@ -89,12 +90,12 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 						
 				else:
 					# Start Thread2 in parallel to Thread1
-					sameContent = compsubfolders(pathSrc, pathDst2)
+					sameContent = compsubfolders(pathSrc, pathDst2, omitFile)
 					if sameContent == False:
 						checkTime = datetime.datetime.now()
 						if Thread2.isAlive() == False:
 							try:
-								Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2, silentThread, secureM))
+								Thread2 = threading.Thread(target=worker, args=(pathSrc, pathDst2, silentThread, secureM, omitFile))
 								Thread2.start()
 								editSummary("\n<p>%H:%M:%S: Copying to destination2")
 							except:
@@ -167,13 +168,13 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 				editSummary("\n<p>%H:%M:%S: Checking whether all folders are the same\n")
 				# Starts by checking if dst1 still connected and then compare content of folders
 				if os.path.exists(pathDst1):
-					sameContent = compsubfolders(pathSrc, pathDst1)
+					sameContent = compsubfolders(pathSrc, pathDst1, omitFile)
 					if sameContent==True:
 						editSummary("\n<p>%H:%M:%S: All files in source were found in destination 1")
 						# Continues with dst2 if it exists
 						if pathDst2 != "":
 							if os.path.exists(pathDst2):
-								sameContent = compsubfolders(pathSrc, pathDst2)
+								sameContent = compsubfolders(pathSrc, pathDst2, omitFile)
 								if sameContent==True:
 									editSummary("\n<p>%H:%M:%S: All files in source were found in destination 2")
 									# Everything went fine both for dst1 and dst2 and there was no change during time lapse indicated
@@ -285,9 +286,15 @@ def doCopy():
 		messagebox.showerror(title="Problem", message="You must select at least one destination folder")
 		root2.destroy()
 	else:
-		#root.destroy()
-		mainThread = threading.Thread(target = mainProg, args = (root, srcTxt.get(), dst1Txt.get(), dst2Txt.get(), multiThr.get(), timeInt.get(), silentThr.get(), deleteSrc.get(), mail.get(), timeExit.get(), secureMode.get()))
+		filecmp._filter = _filter
+		mainThread = threading.Thread(target = mainProg, args = (root, srcTxt.get(), dst1Txt.get(), dst2Txt.get(), multiThr.get(), timeInt.get(), silentThr.get(), deleteSrc.get(), mail.get(), timeExit.get(), secureMode.get(), omitF.get()))
 		mainThread.start()
+
+# ******************	
+# FUNCTION Abort
+def _filter(flist, skip):
+    return [item for item in flist 
+                 if not any(fnmatch(item, pat) for pat in skip)]
 
 # ******************	
 # FUNCTION Abort
@@ -324,13 +331,16 @@ def abort():
 	
 # ******************	
 # FUNCTION: Workers / Threads
-def worker(var1, var2, silent, secureM):
-    paramRobocopy = ["robocopy", var1, var2, "/e", "/COPY:DT"]
+def worker(var1, var2, silent, secureM, omitFile):
+    var3 = "*."+omitFile
+    paramRobocopy = ["robocopy", var1, var2, "/XF", var3, "/e", "/COPY:DT"]
+#    paramRobocopy.append("/XF Oocyte.tif")
     if secureM == 1:
         paramRobocopy.append("/r:0")
         paramRobocopy.append("/w:30")
         paramRobocopy.append("/dcopy:T")
-        paramRobocopy.append("/Z")        
+        paramRobocopy.append("/Z")
+
     if silent==0:
         FNULL = open(os.devnull, 'w')
         subprocess.call(paramRobocopy, stdout=FNULL, stderr=subprocess.STDOUT)
@@ -339,9 +349,9 @@ def worker(var1, var2, silent, secureM):
 
 # ******************	
 # FUNCTION compare subdirectories
-def compsubfolders(source, destination):
+def compsubfolders(source, destination, omitFile):
 	condition = True
-	myComp = dircmp(source, destination)
+	myComp = dircmp(source, destination, ignore=['*.'+omitFile])
 	if len(myComp.left_only)!=0:
 		condition = False
 	for racine, directories, files in os.walk(source):
@@ -349,7 +359,7 @@ def compsubfolders(source, destination):
 			path1 = os.path.join(racine, myDir)
 			path2 = re.sub(source, destination, path1)
 			if os.path.exists(path2):
-				myComp = dircmp(path1, path2)
+				myComp = dircmp(path1, path2, ignore=['*.'+omitFile])
 				if len(myComp.left_only)!=0:
 					condition = False
 			else:
@@ -422,7 +432,7 @@ except:
 """
 MAIN FRAME
 """
-frame1 = Frame(root, width=780, height=510)
+frame1 = Frame(root, width=780, height=535)
 frame1.pack()
 
 """
@@ -462,7 +472,7 @@ dst2TxtLabel.place(x=5, y=165)
 """
 Frame for Option selection
 """
-frameOptions = LabelFrame(frame1, width=380, height=210, text = "Option Selection", borderwidth=2, relief = RAISED)
+frameOptions = LabelFrame(frame1, width=380, height=235, text = "Option Selection", borderwidth=2, relief = RAISED)
 frameOptions.pack()
 frameOptions.place(x=5, y=245)
 
@@ -492,41 +502,50 @@ delCheckBox = Checkbutton(frameOptions, text="Delete files in source folder afte
 delCheckBox.pack()
 delCheckBox.place(x=5, y=80)
 
+omitF = StringVar()
+omitF.set("")
+omitFLabel = Label(frameOptions, text="Omit files with extension:", anchor=W)
+omitFLabel.pack()
+omitFLabel.place(x=5, y=105)
+omitFCheckBox = Entry(frameOptions, width = 3, textvariable=omitF)
+omitFCheckBox.pack()
+omitFCheckBox.place(x=280, y=105)
+
 # Time-lapse information
 timeInt = DoubleVar()
 timeInt.set(0.5)
 tiLabel = Label(frameOptions, text="Time interval between Robocopy processes (min):", anchor=W)
 tiLabel.pack()
-tiLabel.place(x=5, y=105)
+tiLabel.place(x=5, y=130)
 tiText = Entry(frameOptions, width=6, textvariable = timeInt)
 tiText.pack()
-tiText.place(x=280, y=107)
+tiText.place(x=280, y=132)
 
 # Time-Exit information
 timeExit = DoubleVar()
 timeExit.set(5)
 tiexLabel = Label(frameOptions, text="Time for exiting if no change in folders (min):", anchor=W)
 tiexLabel.pack()
-tiexLabel.place(x=5, y=130)
+tiexLabel.place(x=5, y=155)
 
 tiexText = Entry(frameOptions, width=6, textvariable = timeExit)
 tiexText.pack()
-tiexText.place(x=280, y=132)
+tiexText.place(x=280, y=157)
 
 # E-mail information
 mail = StringVar()
 mail.set(mailAdresse)
 sendLabel = Label(frameOptions, text="Send Summary to:", anchor=W)
 sendLabel.pack()
-sendLabel.place(x=5, y=155)
+sendLabel.place(x=5, y=180)
 adresseText = Entry(frameOptions, justify=LEFT, width = 25, textvariable = mail)
 adresseText.pack()
-adresseText.place(x=115, y=157)
+adresseText.place(x=115, y=182)
 
 """
 Frame for Summary
 """
-frameSummary = LabelFrame(frame1, width=380, height=450, text = "Summary", borderwidth=2, relief = RAISED)
+frameSummary = LabelFrame(frame1, width=380, height=475, text = "Summary", borderwidth=2, relief = RAISED)
 frameSummary.pack()
 frameSummary.place(x=395, y=5)
 
@@ -543,11 +562,11 @@ sumLabel.place(x=5, y=5)
 doCopyButton = Button(frame1, text = 'Do Copy !', width = 8, overrelief=RIDGE, font = "arial 10", command = doCopy)
 doCopyButton.config(bg = "yellow green", fg="black")
 doCopyButton.pack()
-doCopyButton.place(x=10, y=470)
+doCopyButton.place(x=10, y=495)
 cancelButton = Button(frame1, text = 'Abort', width = 8, overrelief=RIDGE, font = "arial 10", command = abort)
 cancelButton.config(bg = "tomato", fg="black")
 cancelButton.pack()
-cancelButton.place(x=100, y=470)
+cancelButton.place(x=100, y=495)
 
 # Show Dialog Window
 root.mainloop()
