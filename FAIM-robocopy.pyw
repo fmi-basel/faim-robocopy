@@ -50,6 +50,7 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 			# Checks first that Thread1 is not running, otherwise skip the step.
 			sameContent = compsubfolders(pathSrc, pathDst1, omitFile)
 			if sameContent == False:
+				editSummary("\n<p>%H:%M:%S: Source and destination(s) are different")
 				checkTime = datetime.datetime.now()
 				if Thread1.isAlive() == False | sameContent == False:
 					checkTime = datetime.datetime.now()
@@ -72,7 +73,8 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 						if not Thread1.isAlive():
 							conditionWait = True
 						else:
-							sleep(10)	
+							editSummary("\n<p>%H:%M:%S: Waiting for Thread1 to finish")
+							sleep(10)
 					# Start Thread2 now that Thread1 is done
 					sameContent = compsubfolders(pathSrc, pathDst2, omitFile)
 					if sameContent == False:
@@ -83,7 +85,7 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 								Thread2.start()
 								editSummary("\n<p>%H:%M:%S: Copying to destination 2")
 							except:
-								editSummary("\n<p>%H:%M:%S: Problem with thread 1")
+								editSummary("\n<p>%H:%M:%S: Problem with thread 2")
 								SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 						else:
 							pass
@@ -110,6 +112,7 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 
 			# Delete files in source folder
 			if deleteSource:
+				editSummary("\n<p>%H:%M:%S: Deleting source files that have been fully copied")
 				try:
 					for racine, directories, files in os.walk(pathSrc):
 						for myFile in files:
@@ -122,27 +125,25 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 										if os.path.isfile(path2) & filecmp.cmp(pathS, path2)==True:
 											try:
 												os.remove(pathS)
+												editSummary("\n<p>%H:%M:%S: Deleting "+myFile)
 											except:
-												editSummary("\n<p>%H:%M:%S: Not all files could be deleted yet\n")
+												editSummary("\n<p>%H:%M:%S: "+myFile+" could not be deleted yet")
 										else:
 												pass
 									else:
 										try:
 											os.remove(pathS)
+											editSummary("\n<p>%H:%M:%S: Deleting "+myFile)
 										except:
-											editSummary("\n<p>%H:%M:%S: Not all files could be deleted yet\n")
+											editSummary("\n<p>%H:%M:%S: "+myFile+" could not be deleted yet")
 								else:
 									pass
-							except:
-								pass
-							"""
 							except OSError as err:
 								editSummary("\n<p>%H:%M:%S: Problem with deleting files: OS error: {0}".format(err))
 							except ValueError:
 								editSummary("\n<p>%H:%M:%S: Problem with deleting files: could not convert data to an integer.")
 							except:
 								editSummary("\n<p>%H:%M:%S: Problem with deleting files: Unexpected error:", sys.exc_info()[0])
-							"""
 				except:
 					pass
 
@@ -165,18 +166,18 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 			timeDiff = exitTime - checkTime
 			if int(timeDiff.total_seconds()) >= int(waitExit*60):
 				checkTime = exitTime
-				editSummary("\n<p>%H:%M:%S: Checking whether all folders are the same\n")
+				editSummary("\n\n<p>%H:%M:%S: Checking whether all folders are the same\n")
 				# Starts by checking if dst1 still connected and then compare content of folders
 				if os.path.exists(pathDst1):
 					sameContent = compsubfolders(pathSrc, pathDst1, omitFile)
 					if sameContent==True:
-						editSummary("\n<p>%H:%M:%S: All files in source were found in destination 1")
+						editSummary("\n<p>%H:%M:%S: There is not file in source not found in destination 1")
 						# Continues with dst2 if it exists
 						if pathDst2 != "":
 							if os.path.exists(pathDst2):
 								sameContent = compsubfolders(pathSrc, pathDst2, omitFile)
 								if sameContent==True:
-									editSummary("\n<p>%H:%M:%S: All files in source were found in destination 2")
+									editSummary("\n<p>%H:%M:%S: There is not file in source not found in destination 2")
 									# Everything went fine both for dst1 and dst2 and there was no change during time lapse indicated
 									condition = True
 							else:
@@ -192,7 +193,6 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 					SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 					# dst1 is not available anymore, no dst2 had been entered
 					#condition = True
-	
 	# Something went wrong at some unidentified step
 	except:
 		editSummary("\n<p>%H:%M:%S: An error occured.\n")
