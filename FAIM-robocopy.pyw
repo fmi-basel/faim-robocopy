@@ -171,13 +171,13 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 				if os.path.exists(pathDst1):
 					sameContent = compsubfolders(pathSrc, pathDst1, omitFile)
 					if sameContent==True:
-						editSummary("\n<p>%H:%M:%S: There is not file in source not found in destination 1")
+						editSummary("\n<p>%H:%M:%S: There is no file in source not found in destination 1")
 						# Continues with dst2 if it exists
 						if pathDst2 != "":
 							if os.path.exists(pathDst2):
 								sameContent = compsubfolders(pathSrc, pathDst2, omitFile)
 								if sameContent==True:
-									editSummary("\n<p>%H:%M:%S: There is not file in source not found in destination 2")
+									editSummary("\n<p>%H:%M:%S: There is no file in source not found in destination 2")
 									# Everything went fine both for dst1 and dst2 and there was no change during time lapse indicated
 									condition = True
 							else:
@@ -196,10 +196,13 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 	# Something went wrong at some unidentified step
 	except OSError as err:
 		editSummary("\n<p>%H:%M:%S: Problem: OS error: {0}".format(err))
+		SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 	except ValueError:
 		editSummary("\n<p>%H:%M:%S: Problem: could not convert data to an integer.")
+		SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 	except:
 		editSummary("\n<p>%H:%M:%S: Problem: Unexpected error: ", sys.exc_info()[0])
+		SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
 
 	# count number of files in each folder
 	countFileNumber(pathSrc)
