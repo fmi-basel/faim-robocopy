@@ -194,9 +194,12 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 					# dst1 is not available anymore, no dst2 had been entered
 					#condition = True
 	# Something went wrong at some unidentified step
+	except OSError as err:
+		editSummary("\n<p>%H:%M:%S: Problem: OS error: {0}".format(err))
+	except ValueError:
+		editSummary("\n<p>%H:%M:%S: Problem: could not convert data to an integer.")
 	except:
-		editSummary("\n<p>%H:%M:%S: An error occured.\n")
-		SendEmail(mailAdresse, "Robocopy Info: ERROR", "Please check Summary")
+		editSummary("\n<p>%H:%M:%S: Problem: Unexpected error: ", sys.exc_info()[0])
 
 	# count number of files in each folder
 	countFileNumber(pathSrc)
