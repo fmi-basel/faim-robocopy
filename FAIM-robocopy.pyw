@@ -125,7 +125,6 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 										if os.path.isfile(path2) & filecmp.cmp(pathS, path2)==True:
 											try:
 												os.remove(pathS)
-												editSummary("\n<p>%H:%M:%S: Deleting "+myFile)
 											except:
 												editSummary("\n<p>%H:%M:%S: "+myFile+" could not be deleted yet")
 										else:
@@ -133,7 +132,6 @@ def mainProg(root, pathSrc, pathDst1, pathDst2, multiThread, timeInterval, silen
 									else:
 										try:
 											os.remove(pathS)
-											editSummary("\n<p>%H:%M:%S: Deleting "+myFile)
 										except:
 											editSummary("\n<p>%H:%M:%S: "+myFile+" could not be deleted yet")
 								else:
