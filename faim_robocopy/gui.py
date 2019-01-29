@@ -2,7 +2,7 @@ import datetime
 import os
 import sys
 import logging
-
+import signal
 import psutil
 
 from tkinter import Tk
@@ -33,7 +33,7 @@ from threading import Thread
 from faim_robocopy.utils import get_user_info
 from faim_robocopy.utils import count_files_in_subtree
 from faim_robocopy.console import ConsoleUi
-from faim_robocopy.robocopy import robocopy
+from faim_robocopy.robocopy import RobocopyTask
 from faim_robocopy.file_logger import add_logging_to_file
 
 
@@ -255,43 +255,44 @@ class OptionsSelectionUi(LabelFrame):
             **kwargs)
         self.pack(side=TOP, expand=True, fill=BOTH, padx=PAD, pady=PAD)
 
-        pack_params = dict(side=TOP, expand=True, fill=TK_X)
+        pack_params = dict(side=TOP, expand=False, fill=TK_X)
+        WRAPLENGTH = 300
 
         # Options checkboxes
         self.secure_mode_button = Checkbutton(
             self,
             text="Secure Mode (slower)",
-            wraplength=200,
+            wraplength=WRAPLENGTH,
             variable=self.shared.secure_mode_var,
             anchor=TK_W_ANCHOR)
-        self.secure_mode_button.pack(**pack_params)
+        self.secure_mode_button.pack(pady=(0, PAD), **pack_params)
         #self.secure_mode_button.place(x=5, y=5)
 
         self.multithreaded_button = Checkbutton(
             self,
             text="Copy both destinations in parallel",
-            wraplength=200,
+            wraplength=WRAPLENGTH,
             variable=self.shared.multithreaded_var,
             anchor=TK_W_ANCHOR)
-        self.multithreaded_button.pack(**pack_params)
+        self.multithreaded_button.pack(pady=(0, PAD), **pack_params)
         #self.multithreaded_button.place(x=5, y=30)
 
         self.silent_button = Checkbutton(
             self,
             text="Show Robocopy console",
-            wraplength=200,
+            wraplength=WRAPLENGTH,
             variable=self.shared.silent_var,
             anchor=TK_W_ANCHOR)
-        self.silent_button.pack(**pack_params)
+        self.silent_button.pack(pady=(0, PAD), **pack_params)
         #self.silent_button.place(x=5, y=55)
 
         self.delete_src_button = Checkbutton(
             self,
             text="Delete files in source folder after copy",
-            wraplength=200,
+            wraplength=WRAPLENGTH,
             variable=self.shared.delete_src_var,
             anchor=TK_W_ANCHOR)
-        self.delete_src_button.pack(**pack_params)
+        self.delete_src_button.pack(pady=(0, PAD), **pack_params)
         #self.delete_src_button.place(x=5, y=80)
 
         self.omit_files_label = Label(
@@ -300,7 +301,7 @@ class OptionsSelectionUi(LabelFrame):
         #self.omit_files_label.place(x=5, y=105)
         self.omit_files_box = Entry(
             self, width=3, textvariable=self.shared.omit_files_var)
-        self.omit_files_box.pack(**pack_params)
+        self.omit_files_box.pack(pady=(0, PAD), **pack_params)
         #self.omit_files_box.place(x=280, y=105)
 
         # Time-lapse information
@@ -312,7 +313,7 @@ class OptionsSelectionUi(LabelFrame):
         #self.time_interval_label.place(x=5, y=130)
         self.time_interval_box = Entry(
             self, width=6, textvariable=self.shared.time_interval_var)
-        self.time_interval_box.pack(**pack_params)
+        self.time_interval_box.pack(pady=(0, PAD), **pack_params)
         #self.time_interval_box.place(x=280, y=132)
 
         # Time-Exit information
@@ -322,10 +323,9 @@ class OptionsSelectionUi(LabelFrame):
             anchor=TK_W_ANCHOR)
         self.time_exit_label.pack(**pack_params)
         #self.time_exit_label.place(x=5, y=155)
-
         self.time_exit_box = Entry(
             self, width=6, textvariable=self.shared.time_exit_var)
-        self.time_exit_box.pack(**pack_params)
+        self.time_exit_box.pack(pady=(0, PAD), **pack_params)
         #self.time_exit_box.place(x=280, y=157)
 
         # E-mail information
@@ -343,8 +343,6 @@ class RobocopyGUI(Frame):
     '''
     '''
 
-    # TODO is pack necessary?
-
     def __init__(self, parent):
         '''
         '''
@@ -353,9 +351,11 @@ class RobocopyGUI(Frame):
         self.shared = SharedResources(
             user_mail=self.user_info['user_mail'],
             **_read_params(self.user_info['user_dir']))
+        self.robocopy = RobocopyTask()
+
+        add_logging_to_file(_get_logpath(self.user_info))
 
         self.build(parent)
-        add_logging_to_file(_get_logpath(self.user_info))
 
     def build(self, parent):
         '''builds all components of the GUI.
@@ -386,6 +386,9 @@ class RobocopyGUI(Frame):
         self.horizontal_panes.pack(expand=True, fill=BOTH, padx=PAD, pady=PAD)
 
         self.add_copy_and_abort()
+
+        self.parent.protocol('WM_DELETE_WINDOW', self.quit)
+        self.parent.bind('<Control-q>', self.quit)
 
     def add_copy_and_abort(self):
         '''adds the copy and abort buttons to the bottom of the gui.
@@ -448,6 +451,12 @@ class RobocopyGUI(Frame):
             return self.error_message(
                 'You must specify at least one destination folder')
 
+        if self.robocopy.is_running():
+            logging.getLogger(__name__).info(
+                'Robocopy is already running. Consider "Abort" to update its parameters'
+            )
+            return
+
         # save parameters for future use.
         # TODO Shouldnt we save all settings?
         _dump_params(
@@ -456,30 +465,12 @@ class RobocopyGUI(Frame):
             dest1=self.shared.dest1_var.get(),
             dest2=self.shared.dest2_var.get())
 
-        copy_thread = Thread(target=robocopy, kwargs=robocopy_kwargs)
-        copy_thread.start()
+        self.robocopy = RobocopyTask()
+        self.robocopy_thread = Thread(
+            target=self.robocopy.run, kwargs=robocopy_kwargs)
+        self.robocopy_thread.start()
 
-        # Report files in both folders.
-        for folder in [
-                self.shared.source_var.get(),
-                self.shared.dest1_var.get(),
-                self.shared.dest2_var.get()
-        ]:
-
-            if folder == '':
-                continue
-
-            try:
-                filecount = count_files_in_subtree(folder)
-            except Exception:
-                logging.getLogger(__name__).error(
-                    'Could not count files in %s', folder)
-            else:
-                logging.getLogger(__name__).info('Number of files in %s = %d',
-                                                 folder, filecount)
-
-        # TODO Send summary to user
-        # TODO Terminate GUI
+        # TODO Terminate GUI?
 
     def abort(self):
         '''
@@ -488,17 +479,22 @@ class RobocopyGUI(Frame):
         # TODO send_mail() to user
         self._stop_running_threads()
         self._stop_robocopy_processes()
+
+    def quit(self, *args):
+        '''
+        '''
+        logging.getLogger(__name__).info('FAIM-robocopy terminated by user')
+        self._stop_running_threads()
         self.parent.destroy()
 
     def _stop_running_threads(self):
         '''stop all worker threads.
 
         '''
-        # Legacy code
-        # TODO Does this even work? No.
-        # TODO is there a better way to do this?
         try:
-            self.copy_thread.run = False  # TODO does this even work?
+            self.robocopy.terminate()
+            # if self.robocopy_thread.is_alive():
+            #     self.robocopy_thread.join()
         except Exception:
             pass
 
@@ -506,6 +502,7 @@ class RobocopyGUI(Frame):
         '''terminate all running robocopy processes and windows consoles.
 
         '''
+        # Legacy code
         # TODO Check if this works
         for proc in psutil.process_iter():
             try:
@@ -522,8 +519,8 @@ class RobocopyGUI(Frame):
 def run_robocopy_gui():
     '''
     '''
-    # redirect standard output streams
-    # TODO Why?
+    # Legacy code: redirect standard output streams
+    # TODO Is this really needed?
     if sys.executable.endswith("pythonw.exe"):
         sys.stdout = open(os.devnull, "w")
         sys.stderr = open(
