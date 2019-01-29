@@ -30,7 +30,8 @@ def run_robocopy_gui():
 
     # TODO consider opening a window that informs about update status.
     try:
-        add_logging_to_file(_get_logpath(get_user_info()))
+        logfile = _get_logpath(get_user_info())
+        add_logging_to_file(logfile)
 
         logger.info('Looking for updates...')
         needs_restart = auto_update_from_git(
@@ -51,5 +52,5 @@ def run_robocopy_gui():
     # Start root
     root = Tk()
     root.title("Robocopy FAIM")
-    RobocopyGUI(root)
+    RobocopyGUI(root, logfile)
     root.mainloop()

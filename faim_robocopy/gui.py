@@ -136,6 +136,7 @@ class FolderSelectionUi(LabelFrame):
             text='Destination 1 directory',
             overrelief=SUNKEN,
             command=self._choose_first_dest,
+            anchor=TK_W_ANCHOR,
             width=20)
         self.dest1_button.pack()
         self.dest1_button.place(x=5, y=70)
@@ -153,6 +154,7 @@ class FolderSelectionUi(LabelFrame):
             text='Destination 2 directory',
             overrelief=SUNKEN,
             command=self._choose_second_dest,
+            anchor=TK_W_ANCHOR,
             width=20)
         self.dest2_button.pack()
         self.dest2_button.place(x=5, y=135)
@@ -295,11 +297,12 @@ class RobocopyGUI(Frame):
 
     '''
 
-    def __init__(self, parent):
+    def __init__(self, parent, logfile):
         '''
         '''
         super().__init__(parent)
         self.parent = parent
+        self.logfile = logfile
         self.user_info = get_user_info()
         self.shared = SharedResources(
             user_mail=self.user_info['user_mail'],
@@ -391,7 +394,7 @@ class RobocopyGUI(Frame):
             delete_source=self.shared.delete_src_var.get(),
             notifier=MailNotifier(
                 user_mail=self.shared.mail_var.get(),
-                logfile=_get_logpath(self.user_info)),
+                logfile=self.logfile),
             skip_files=self.shared.omit_files_var.get(),
             silent=self.shared.silent_var.get(),
             secure_mode=self.shared.secure_mode_var.get())

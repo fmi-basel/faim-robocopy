@@ -182,8 +182,8 @@ class RobocopyTask(object):
 
             try:
                 filecount = count_files_in_subtree(folder)
-                logging.getLogger(__name__).info('Number of files in %s = %d',
-                                                 folder, filecount)
+                logging.getLogger(__name__).info('%d files in %s',
+                                                 filecount, folder)
             except Exception:
                 logging.getLogger(__name__).error(
                     'Could not count files in %s', folder)
