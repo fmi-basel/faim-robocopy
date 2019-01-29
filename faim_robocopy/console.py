@@ -87,7 +87,7 @@ class ConsoleUi(tk.LabelFrame):
         self.log_queue = queue.Queue()
         self.queue_handler = QueueHandler(self.log_queue)
         formatter = logging.Formatter(
-            '%(asctime)s: %(message)s', datefmt='%d.%m.%Y %I:%M:%S')
+            '%(asctime)s: %(message)s', datefmt='%d.%m.%Y %H:%M:%S')
         self.queue_handler.setFormatter(formatter)
         logging.getLogger().addHandler(self.queue_handler)
 

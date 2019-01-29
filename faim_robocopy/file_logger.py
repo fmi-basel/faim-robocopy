@@ -30,6 +30,6 @@ def add_logging_to_file(filename):
     handler = logging.FileHandler(filename)
     formatter = logging.Formatter(
         '<p>%(asctime)s (%(name)s) [%(levelname)s]: %(message)s</p>',
-        datefmt='%d.%m.%Y %I:%M:%S')
+        datefmt='%d.%m.%Y %H:%M:%S')
     handler.setFormatter(formatter)
     logging.getLogger().addHandler(handler)
