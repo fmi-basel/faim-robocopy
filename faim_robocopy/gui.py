@@ -1,9 +1,5 @@
-import datetime
 import os
-import sys
 import logging
-import signal
-import psutil
 
 from tkinter import Tk
 from tkinter import Frame
@@ -30,11 +26,18 @@ from tkinter.filedialog import askdirectory
 
 from threading import Thread
 
+import psutil
+
 from faim_robocopy.utils import get_user_info
-from faim_robocopy.utils import count_files_in_subtree
 from faim_robocopy.console import ConsoleUi
 from faim_robocopy.robocopy import RobocopyTask
-from faim_robocopy.file_logger import add_logging_to_file
+from faim_robocopy.notifier import MailNotifier
+from faim_robocopy.params import read_params, dump_params
+from faim_robocopy.file_logger import _get_logpath
+
+# GUI layout constants.
+BORDERWIDTH = 5
+PAD = 10
 
 
 def choose_directory(initial_val):
@@ -43,62 +46,6 @@ def choose_directory(initial_val):
     '''
     return askdirectory(
         initialdir=initial_val, title="Please select a directory")
-
-
-PARAM_FNAME = 'param.txt'
-
-
-def _read_params(user_dir):
-    '''read last used source and dest params.
-
-    '''
-    params = dict(source='', dest1='', dest2='')
-
-    # TODO make this more robust.
-    paramFile = os.path.join(user_dir, PARAM_FNAME)
-    if os.path.isfile(paramFile):
-        with open(paramFile, 'r') as target:
-            content = target.read().strip('\n')
-            params['source'], params['dest1'], params['dest2'] = content.split(
-                ";")
-    return params
-
-
-def _dump_params(user_dir, source, dest1, dest2):
-    '''write last source and dest params
-
-    '''
-    delimiter = ';'
-    param_file = os.path.join(user_dir, PARAM_FNAME)
-
-    logging.getLogger(__name__).debug('Writing user params to %s', param_file)
-
-    with open(param_file, 'w') as fout:
-        fout.write(delimiter.join([source, dest1, dest2]))
-
-
-def _get_logpath(user_info):
-    '''constructs the logfile path.
-
-    '''
-    # Locations to check. high-priority first.
-    potential_logdirs = [user_info.get('homeshare'), user_info.get('user_dir')]
-    _subdir = 'Desktop'
-
-    logfilename = 'Robocopy_Logfile_{}.html'.format(
-        datetime.datetime.now().strftime("%H-%M-%S"))
-
-    # check locations to log to:
-    for logdir in (os.path.join(basedir, _subdir)
-                   for basedir in potential_logdirs if basedir is not None):
-        if os.path.exists(logdir):
-            return os.path.join(logdir, logfilename)
-
-    raise IOError('Could not determine logfile path.')
-
-
-BORDERWIDTH = 5
-PAD = 10
 
 
 class SharedResources(object):
@@ -144,6 +91,10 @@ class SharedResources(object):
 
 
 class FolderSelectionUi(LabelFrame):
+    '''GUI section to choose source and destination folders.
+
+    '''
+
     def __init__(self, parent, shared, **kwargs):
         '''builds the folder selection frame.
 
@@ -256,13 +207,13 @@ class OptionsSelectionUi(LabelFrame):
         self.pack(side=TOP, expand=True, fill=BOTH, padx=PAD, pady=PAD)
 
         pack_params = dict(side=TOP, expand=False, fill=TK_X)
-        WRAPLENGTH = 300
+        wrap_length = 300
 
         # Options checkboxes
         self.secure_mode_button = Checkbutton(
             self,
             text="Secure Mode (slower)",
-            wraplength=WRAPLENGTH,
+            wraplength=wrap_length,
             variable=self.shared.secure_mode_var,
             anchor=TK_W_ANCHOR)
         self.secure_mode_button.pack(pady=(0, PAD), **pack_params)
@@ -271,7 +222,7 @@ class OptionsSelectionUi(LabelFrame):
         self.multithreaded_button = Checkbutton(
             self,
             text="Copy both destinations in parallel",
-            wraplength=WRAPLENGTH,
+            wraplength=wrap_length,
             variable=self.shared.multithreaded_var,
             anchor=TK_W_ANCHOR)
         self.multithreaded_button.pack(pady=(0, PAD), **pack_params)
@@ -280,7 +231,7 @@ class OptionsSelectionUi(LabelFrame):
         self.silent_button = Checkbutton(
             self,
             text="Show Robocopy console",
-            wraplength=WRAPLENGTH,
+            wraplength=wrap_length,
             variable=self.shared.silent_var,
             anchor=TK_W_ANCHOR)
         self.silent_button.pack(pady=(0, PAD), **pack_params)
@@ -289,7 +240,7 @@ class OptionsSelectionUi(LabelFrame):
         self.delete_src_button = Checkbutton(
             self,
             text="Delete files in source folder after copy",
-            wraplength=WRAPLENGTH,
+            wraplength=wrap_length,
             variable=self.shared.delete_src_var,
             anchor=TK_W_ANCHOR)
         self.delete_src_button.pack(pady=(0, PAD), **pack_params)
@@ -340,20 +291,20 @@ class OptionsSelectionUi(LabelFrame):
 
 
 class RobocopyGUI(Frame):
-    '''
+    '''Main GUI.
+
     '''
 
     def __init__(self, parent):
         '''
         '''
+        super().__init__(parent)
         self.parent = parent
         self.user_info = get_user_info()
         self.shared = SharedResources(
             user_mail=self.user_info['user_mail'],
-            **_read_params(self.user_info['user_dir']))
+            **read_params(self.user_info['user_dir']))
         self.robocopy = RobocopyTask()
-
-        add_logging_to_file(_get_logpath(self.user_info))
 
         self.build(parent)
 
@@ -413,7 +364,8 @@ class RobocopyGUI(Frame):
         self.cancel_button.config(bg="tomato", fg="black")
         self.cancel_button.pack(side=LEFT, padx=PAD, pady=PAD)
 
-    def error_message(self, message):
+    @staticmethod
+    def error_message(message):
         '''show an error message in a separate window.
 
         '''
@@ -437,29 +389,33 @@ class RobocopyGUI(Frame):
             time_interval=self.shared.time_interval_var.get(),
             wait_exit=self.shared.time_exit_var.get(),
             delete_source=self.shared.delete_src_var.get(),
-            user_mail=self.shared.mail_var.get(),
+            notifier=MailNotifier(
+                user_mail=self.shared.mail_var.get(),
+                logfile=_get_logpath(self.user_info)),
             skip_files=self.shared.omit_files_var.get(),
             silent=self.shared.silent_var.get(),
             secure_mode=self.shared.secure_mode_var.get())
 
         if robocopy_kwargs['source'] == '' or not os.path.exists(
                 robocopy_kwargs['source']):
-            return self.error_message('You must select a source folder')
+            self.error_message('You must select a source folder')
+            return
 
         if all((dest == '' or not os.path.exists(dest))
                for dest in robocopy_kwargs['destinations']):
-            return self.error_message(
+            self.error_message(
                 'You must specify at least one destination folder')
+            return
 
         if self.robocopy.is_running():
             logging.getLogger(__name__).info(
-                'Robocopy is already running. Consider "Abort" to update its parameters'
-            )
+                'Robocopy is already running. Consider aborting and restarting'
+                ' to update its parameters.')
             return
 
         # save parameters for future use.
         # TODO Shouldnt we save all settings?
-        _dump_params(
+        dump_params(
             user_dir=self.user_info['user_dir'],
             source=self.shared.source_var.get(),
             dest1=self.shared.dest1_var.get(),
@@ -470,13 +426,10 @@ class RobocopyGUI(Frame):
             target=self.robocopy.run, kwargs=robocopy_kwargs)
         self.robocopy_thread.start()
 
-        # TODO Terminate GUI?
-
     def abort(self):
         '''
         '''
         logging.getLogger(__name__).info('Robocopy aborted by user')
-        # TODO send_mail() to user
         self._stop_running_threads()
         self._stop_robocopy_processes()
 
@@ -485,25 +438,25 @@ class RobocopyGUI(Frame):
         '''
         logging.getLogger(__name__).info('FAIM-robocopy terminated by user')
         self._stop_running_threads()
+        self._stop_robocopy_processes()
         self.parent.destroy()
 
     def _stop_running_threads(self):
         '''stop all worker threads.
 
         '''
-        try:
-            self.robocopy.terminate()
-            # if self.robocopy_thread.is_alive():
-            #     self.robocopy_thread.join()
-        except Exception:
-            pass
+        self.robocopy.terminate()
+        # if self.robocopy_thread.is_alive():
+        #     self.robocopy_thread.join()
 
-    def _stop_robocopy_processes(self):
+    @staticmethod
+    def _stop_robocopy_processes():
         '''terminate all running robocopy processes and windows consoles.
 
         '''
         # Legacy code
-        # TODO Check if this works
+        # TODO Check if this works / is needed.
+        # TODO Doesnt this cause issues with other instances of robocopy?
         for proc in psutil.process_iter():
             try:
                 if proc.name() == 'Robocopy.exe':
@@ -514,22 +467,3 @@ class RobocopyGUI(Frame):
                 logging.getLogger(__name__).error(
                     'Could not terminate process %s. Error message: %s',
                     proc.name(), str(err))
-
-
-def run_robocopy_gui():
-    '''
-    '''
-    # Legacy code: redirect standard output streams
-    # TODO Is this really needed?
-    if sys.executable.endswith("pythonw.exe"):
-        sys.stdout = open(os.devnull, "w")
-        sys.stderr = open(
-            os.path.join(
-                os.getenv("TEMP"), "stderr-" + os.path.basename(sys.argv[0])),
-            "w")
-
-    # Start root
-    root = Tk()
-    root.title("Robocopy FAIM")
-    RobocopyGUI(root)
-    root.mainloop()

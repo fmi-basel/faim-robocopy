@@ -9,7 +9,6 @@ from concurrent.futures import ThreadPoolExecutor
 from faim_robocopy.utils import compsubfolders
 from faim_robocopy.utils import delete_existing
 from faim_robocopy.utils import count_files_in_subtree
-from faim_robocopy.mail import send_mail
 
 
 class RobocopyTask(object):
@@ -21,6 +20,7 @@ class RobocopyTask(object):
         '''
         self._running = False
         self._update_rate_in_s = 5.
+        self._time_at_last_change = datetime.datetime.now()
 
     def terminate(self):
         '''requests the task to terminate.
@@ -56,7 +56,7 @@ class RobocopyTask(object):
         logging.getLogger(__name__).info('Starting robocopy task')
         self._running = True
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, *args, **kwargs):
         '''
         '''
         self._running = False
@@ -68,9 +68,10 @@ class RobocopyTask(object):
             return self._run(*args, **kwargs)
 
     def _run(self, source, destinations, multithread, time_interval, wait_exit,
-             delete_source, user_mail, skip_files, **robocopy_kwargs):
+             delete_source, skip_files, notifier, **robocopy_kwargs):
         '''
         '''
+
         # check number of dest
         if not isinstance(destinations, (tuple, list)):
             destinations = [destinations]
@@ -83,15 +84,12 @@ class RobocopyTask(object):
             raise RuntimeError('Need at least one destination to copy to.')
 
         logging.getLogger(__name__).info('Source folder: %s', source)
-        for ii, dest in enumerate(destinations):
+        for counter, dest in enumerate(destinations):
             logging.getLogger(__name__).info('Destination folder %d: %s',
-                                             ii + 1, dest)
+                                             counter + 1, dest)
 
         # Define the number of threads for copying
-        if multithread and len(dest) >= 2:
-            max_workers = 2
-        else:
-            max_workers = 1
+        max_workers = 2 if (multithread and len(destinations) >= 2) else 1
 
         # Log start
         logger = logging.getLogger(__name__)
@@ -125,6 +123,7 @@ class RobocopyTask(object):
                         # the failing job had.
                         logger.error('Robocopy failed with error %s',
                                      str(error))
+                        notifier.failed(error)
                         # TODO discuss if we want to send a mail here already.
                     else:
                         logger.debug('Robocopy job terminated successfully')
@@ -189,7 +188,8 @@ class RobocopyTask(object):
                 logging.getLogger(__name__).error(
                     'Could not count files in %s', folder)
 
-        # TODO Send summary to user?
+        # Notify user about success.
+        notifier.finished()
 
 
 def robocopy_call(source, dest, silent, secure_mode, skip_files, dry=False):
@@ -213,8 +213,9 @@ def robocopy_call(source, dest, silent, secure_mode, skip_files, dry=False):
         cmd.append("/Z")
 
     if dry:
-        logging.getLogger(__name__).info(cmd)
+        logging.getLogger(__name__).info('Dry run: %s', ' '.join(cmd))
         return
+
     if silent == 0:
         FNULL = open(os.devnull, 'w')
         subprocess.check_call(cmd, stdout=FNULL, stderr=subprocess.STDOUT)
