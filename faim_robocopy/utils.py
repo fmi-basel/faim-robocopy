@@ -3,7 +3,6 @@ import os
 import re
 import getpass
 import logging
-
 import filecmp
 from filecmp import dircmp
 from fnmatch import fnmatch
@@ -17,31 +16,34 @@ def count_files_in_subtree(folder):
 
 
 def compsubfolders(source, destination, omitFile):
-    '''compare subdirectories.
+    '''compare subdirectories. Returns True only if the subtrees are identical
+    without considering files matching omitFile.
 
     '''
     # TODO Can we avoid this somehow?
+    # TODO Refactor omitFile
     filecmp._filter = _filter
 
-    # TODO Refactor omitFile
-    # TODO We dont necessarily need to traverse
-    # all subfolders if we just want to say if the two folders are
-    # different.
-    condition = True
-    myComp = dircmp(source, destination, ignore=['*.' + omitFile])
-    if len(myComp.left_only) != 0:
-        condition = False
-    for racine, directories, files in os.walk(source):
-        for myDir in directories:
-            path1 = os.path.join(racine, myDir)
+    dir_comparison = dircmp(source, destination, ignore=['*.' + omitFile])
+
+    # are there some files that only occur in source?
+    if len(dir_comparison.left_only) > 0:
+        return False
+
+    for racine, directories, _ in os.walk(source):
+        for current_dir in directories:
+            path1 = os.path.join(racine, current_dir)
             path2 = re.sub(source, destination, path1)
-            if os.path.exists(path2):
-                myComp = dircmp(path1, path2, ignore=['*.' + omitFile])
-                if len(myComp.left_only) != 0:
-                    condition = False
-            else:
-                condition = False
-    return condition
+
+            if not os.path.exists(path2):
+                # there is a subdir that doesnt exist in destination
+                return False
+
+            dir_comparison = dircmp(path1, path2, ignore=['*.' + omitFile])
+            if len(dir_comparison.left_only) > 0:
+                return False
+
+    return True
 
 
 def delete_existing(source, destinations):
@@ -83,7 +85,7 @@ def delete_existing(source, destinations):
         except FileNotFoundError:
             return False
 
-    for racine, directories, files in os.walk(source):
+    for racine, _, files in os.walk(source):
         for filename in files:
             filepath = os.path.join(racine, filename)
 
@@ -101,8 +103,8 @@ def delete_existing(source, destinations):
 
             # Legacy catches. TODO Do we need all of these?
             except OSError as err:
-                logger.error(
-                    'Problem with deleting files. Reason: %s', str(err))
+                logger.error('Problem with deleting files. Reason: %s',
+                             str(err))
             except ValueError as err:
                 logger.error(
                     'Problem with deleting files. Could not convert data to an integer.'
@@ -138,14 +140,14 @@ def get_display_name():
     functional on windows.
 
     '''
-    GetUserNameEx = ctypes.windll.secur32.GetUserNameExW
-    NameDisplay = 3
+    username_ex = ctypes.windll.secur32.GetUserNameExW
+    name_display = 3
 
     size = ctypes.pointer(ctypes.c_ulong(0))
-    GetUserNameEx(NameDisplay, None, size)
-    nameBuffer = ctypes.create_unicode_buffer(size.contents.value)
-    GetUserNameEx(NameDisplay, nameBuffer, size)
-    return nameBuffer.value
+    username_ex(name_display, None, size)
+    name_buffer = ctypes.create_unicode_buffer(size.contents.value)
+    username_ex(name_display, name_buffer, size)
+    return name_buffer.value
 
 
 def get_username():
@@ -171,7 +173,8 @@ def get_user_dir():
 
 
 def guess_user_mail(domain='fmi.ch'):
-    '''
+    '''construct user mail from display name.
+
     '''
     try:
         last, first = get_display_name().split(",")
