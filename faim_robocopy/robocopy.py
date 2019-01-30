@@ -12,7 +12,9 @@ from faim_robocopy.utils import count_files_in_subtree
 
 
 class RobocopyTask(object):
-    '''
+    '''Watches a source folder and launches robocopy calls for new data.
+    Provides a terminate functionality to abort running threads preliminarily.
+
     '''
 
     def __init__(self):
@@ -62,14 +64,17 @@ class RobocopyTask(object):
         self._running = False
 
     def run(self, *args, **kwargs):
-        '''
+        '''runs the robocopy task.
+
         '''
         with self:
             return self._run(*args, **kwargs)
 
     def _run(self, source, destinations, multithread, time_interval, wait_exit,
              delete_source, skip_files, notifier, **robocopy_kwargs):
-        '''
+        '''actual robocopy task function. Call the public method to ensure that the
+        is_running() state is properly set on entering and exiting.
+
         '''
 
         # check number of dest
@@ -98,6 +103,8 @@ class RobocopyTask(object):
 
             self._update_changed()
 
+            # Make at least one robocopy call for each directory
+            # even if we dont have anything to do yet.
             futures = {
                 dest: thread_pool.submit(
                     robocopy_call,
@@ -106,7 +113,6 @@ class RobocopyTask(object):
                     skip_files=skip_files,
                     **robocopy_kwargs)
                 for dest in destinations
-                #if not compsubfolders(source, dest, skip_files)
             }
 
             def _robocopy_callback(future):
@@ -120,11 +126,10 @@ class RobocopyTask(object):
                     error = future.exception()
                     if error:
                         # NOTE unfortunately, we dont know which destination
-                        # the failing job had.
+                        # the failing job had but we can report the error.
                         logger.error('Robocopy failed with error %s',
                                      str(error))
                         notifier.failed(error)
-                        # TODO discuss if we want to send a mail here already.
                     else:
                         logger.debug('Robocopy job terminated successfully')
 
