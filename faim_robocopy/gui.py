@@ -33,7 +33,6 @@ from faim_robocopy.console import ConsoleUi
 from faim_robocopy.robocopy import RobocopyTask
 from faim_robocopy.notifier import MailNotifier
 from faim_robocopy.params import read_params, dump_params
-from faim_robocopy.file_logger import _get_logpath
 
 # GUI layout constants.
 BORDERWIDTH = 5
