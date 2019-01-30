@@ -20,6 +20,7 @@ from tkinter import TOP
 from tkinter import RIDGE
 from tkinter import HORIZONTAL, VERTICAL
 from tkinter import W as TK_W_ANCHOR
+from tkinter import N as TK_N_ANCHOR
 from tkinter import X as TK_X
 from tkinter import messagebox
 from tkinter.filedialog import askdirectory
@@ -110,6 +111,9 @@ class FolderSelectionUi(LabelFrame):
             **kwargs)
         self.pack(side=TOP, expand=True, fill=BOTH, padx=PAD, pady=PAD)
 
+        pack_params = dict(
+            side=TOP, expand=False, anchor=TK_W_ANCHOR, padx=PAD)
+
         # source folder
         self.source_button = Button(
             self,
@@ -118,16 +122,11 @@ class FolderSelectionUi(LabelFrame):
             command=self._choose_source,
             width=20,
             anchor=TK_W_ANCHOR)
-        self.source_button.pack()
-        self.source_button.place(x=5, y=5)
+        self.source_button.pack(pady=(PAD, 0), **pack_params)
 
         self.source_txt_label = Label(
-            self,
-            textvariable=self.shared.source_var,
-            width=50,
-            anchor=TK_W_ANCHOR)
-        self.source_txt_label.pack()
-        self.source_txt_label.place(x=5, y=35)
+            self, textvariable=self.shared.source_var, anchor=TK_W_ANCHOR)
+        self.source_txt_label.pack(**pack_params)
 
         # destination 1 folder
         self.dest1_button = Button(
@@ -137,15 +136,10 @@ class FolderSelectionUi(LabelFrame):
             command=self._choose_first_dest,
             anchor=TK_W_ANCHOR,
             width=20)
-        self.dest1_button.pack()
-        self.dest1_button.place(x=5, y=70)
+        self.dest1_button.pack(pady=(2 * PAD, 0), **pack_params)
         self.dest1_txt_label = Label(
-            self,
-            textvariable=self.shared.dest1_var,
-            width=50,
-            anchor=TK_W_ANCHOR)
-        self.dest1_txt_label.pack()
-        self.dest1_txt_label.place(x=5, y=100)
+            self, textvariable=self.shared.dest1_var, anchor=TK_W_ANCHOR)
+        self.dest1_txt_label.pack(**pack_params)
 
         # Destination 2 folder selection
         self.dest2_button = Button(
@@ -155,15 +149,10 @@ class FolderSelectionUi(LabelFrame):
             command=self._choose_second_dest,
             anchor=TK_W_ANCHOR,
             width=20)
-        self.dest2_button.pack()
-        self.dest2_button.place(x=5, y=135)
+        self.dest2_button.pack(pady=(2 * PAD, 0), **pack_params)
         self.dest2_txt_label = Label(
-            self,
-            textvariable=self.shared.dest2_var,
-            width=50,
-            anchor=TK_W_ANCHOR)
-        self.dest2_txt_label.pack()
-        self.dest2_txt_label.place(x=5, y=165)
+            self, textvariable=self.shared.dest2_var, anchor=TK_W_ANCHOR)
+        self.dest2_txt_label.pack(pady=(0, PAD), **pack_params)
 
     def _choose_source(self):
         '''callback to set source.
@@ -392,8 +381,7 @@ class RobocopyGUI(Frame):
             wait_exit=self.shared.time_exit_var.get(),
             delete_source=self.shared.delete_src_var.get(),
             notifier=MailNotifier(
-                user_mail=self.shared.mail_var.get(),
-                logfile=self.logfile),
+                user_mail=self.shared.mail_var.get(), logfile=self.logfile),
             skip_files=self.shared.omit_files_var.get(),
             silent=self.shared.silent_var.get(),
             secure_mode=self.shared.secure_mode_var.get())
