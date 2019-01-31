@@ -48,7 +48,43 @@ def test_delete_duplicates(tmpdir):
 
     # check if empty folders are treated correctly.
     for empty_dir in empties:
-        assert not os.path.exists(str(empty_dir))
+        assert os.path.exists(str(empty_dir))
 
     for empty_dir in empties_not_for_deletion:
         assert os.path.exists(str(empty_dir))
+
+
+def test_delete_duplicates_diff(tmpdir):
+    '''test deleting of copied files with unidentical contents.
+
+    '''
+    # setup.
+    source = tmpdir.mkdir('source_dir')
+    dest1 = tmpdir.mkdir('dest_dir_1')
+    dest2 = tmpdir.mkdir('some_other_dir').mkdir('/dest_dir_2')
+
+    files_in = {
+        source: ['a.txt', ],
+        dest1: ['a.txt', ],
+        dest2: ['a.txt', ]
+    }
+
+    # create files.
+    for folder in files_in.keys():
+        for filename in files_in[folder]:
+            filehandle = folder.join(filename)
+            filehandle.write(filename)
+
+            # create different content for each file
+            filehandle.write_text(str(folder), encoding='utf-8')
+
+    # do the work.
+    delete_existing(str(source), [str(dest1), str(dest2)])
+
+    # check that all files exists.
+    for folder in [dest1, dest2]:
+        for filename in files_in[folder]:
+            assert os.path.exists(os.path.join(str(folder), filename))
+
+    for filename in files_in[source]:
+        assert os.path.exists(os.path.join(str(source), filename))

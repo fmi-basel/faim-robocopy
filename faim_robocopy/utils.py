@@ -15,6 +15,21 @@ def count_files_in_subtree(folder):
     return sum([len(files) for _, _, files in os.walk(folder)])
 
 
+def count_identical_files(source, destination, omit_files):
+    '''counts identical files in two file trees.
+
+    '''
+    # TODO Refactor
+    filecmp._filter = _filter
+
+    common_files = 0
+    for current_dir, _, _ in os.walk(source):
+        dest_dir = re.sub(source, destination, current_dir)
+        comparison = dircmp(current_dir, dest_dir, ignore=['*.' + omit_files])
+        common_files += len(comparison.common)
+    return common_files
+
+
 def compsubfolders(source, destination, omitFile):
     '''compare subdirectories. Returns True only if the subtrees are identical
     without considering files matching omitFile.
@@ -48,6 +63,13 @@ def compsubfolders(source, destination, omitFile):
 
 def delete_existing(source, destinations):
     '''delete all files that were copied to all destinations.
+
+    Parameters
+    ----------
+    source : path
+        path to source folder.
+    destinations : list of paths
+        list of destination folders.
 
     '''
     logger = logging.getLogger(__name__)
@@ -105,7 +127,7 @@ def delete_existing(source, destinations):
             except OSError as err:
                 logger.error('Problem with deleting files. Reason: %s',
                              str(err))
-            except ValueError as err:
+            except ValueError as err:  # Legacy: where does this come from?
                 logger.error(
                     'Problem with deleting files. Could not convert data to an integer.'
                 )
@@ -118,7 +140,12 @@ def delete_existing(source, destinations):
     # Deleting empty folders
     for current_dir, sub_dirs, files in os.walk(source, topdown=False):
         if len(sub_dirs) + len(files) == 0 and not current_dir == source:
-            os.rmdir(current_dir)
+
+            # only delete empty folders that exist in both destinations
+            if all((
+                    os.path.exists(re.sub(source, dest, current_dir))
+                    for dest in destinations)):
+                os.rmdir(current_dir)
 
 
 # TODO Refactor naming
