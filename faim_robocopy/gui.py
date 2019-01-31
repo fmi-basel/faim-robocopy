@@ -20,7 +20,6 @@ from tkinter import TOP
 from tkinter import RIDGE
 from tkinter import HORIZONTAL, VERTICAL
 from tkinter import W as TK_W_ANCHOR
-from tkinter import N as TK_N_ANCHOR
 from tkinter import X as TK_X
 from tkinter import messagebox
 from tkinter.filedialog import askdirectory
@@ -419,16 +418,18 @@ class RobocopyGUI(Frame):
     def abort(self):
         '''
         '''
-        logging.getLogger(__name__).info('Robocopy aborted by user')
+        logging.getLogger(__name__).info(
+            'Robocopy aborted by user. Please wait ...')
         self._stop_running_threads()
-        self._stop_robocopy_processes()
+        # self._stop_robocopy_processes()
+        logging.getLogger(__name__).info('... done')
 
     def quit(self, *args):
         '''
         '''
         logging.getLogger(__name__).info('FAIM-robocopy terminated by user')
         self._stop_running_threads()
-        self._stop_robocopy_processes()
+        # self._stop_robocopy_processes()
         self.parent.destroy()
 
     def _stop_running_threads(self):
