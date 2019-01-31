@@ -179,8 +179,6 @@ class OptionsSelectionUi(LabelFrame):
     '''
     '''
 
-    # TODO Fix positioning.
-
     def __init__(self, parent, shared, **kwargs):
         '''
         '''
@@ -206,7 +204,6 @@ class OptionsSelectionUi(LabelFrame):
             variable=self.shared.secure_mode_var,
             anchor=TK_W_ANCHOR)
         self.secure_mode_button.pack(pady=(0, PAD), **pack_params)
-        #self.secure_mode_button.place(x=5, y=5)
 
         self.multithreaded_button = Checkbutton(
             self,
@@ -215,7 +212,6 @@ class OptionsSelectionUi(LabelFrame):
             variable=self.shared.multithreaded_var,
             anchor=TK_W_ANCHOR)
         self.multithreaded_button.pack(pady=(0, PAD), **pack_params)
-        #self.multithreaded_button.place(x=5, y=30)
 
         self.silent_button = Checkbutton(
             self,
@@ -224,7 +220,6 @@ class OptionsSelectionUi(LabelFrame):
             variable=self.shared.silent_var,
             anchor=TK_W_ANCHOR)
         self.silent_button.pack(pady=(0, PAD), **pack_params)
-        #self.silent_button.place(x=5, y=55)
 
         self.delete_src_button = Checkbutton(
             self,
@@ -233,16 +228,13 @@ class OptionsSelectionUi(LabelFrame):
             variable=self.shared.delete_src_var,
             anchor=TK_W_ANCHOR)
         self.delete_src_button.pack(pady=(0, PAD), **pack_params)
-        #self.delete_src_button.place(x=5, y=80)
 
         self.omit_files_label = Label(
             self, text="Omit files with extension:", anchor=TK_W_ANCHOR)
         self.omit_files_label.pack(**pack_params)
-        #self.omit_files_label.place(x=5, y=105)
         self.omit_files_box = Entry(
             self, width=3, textvariable=self.shared.omit_files_var)
         self.omit_files_box.pack(pady=(0, PAD), **pack_params)
-        #self.omit_files_box.place(x=280, y=105)
 
         # Time-lapse information
         self.time_interval_label = Label(
@@ -250,11 +242,9 @@ class OptionsSelectionUi(LabelFrame):
             text="Time interval between Robocopy processes (min):",
             anchor=TK_W_ANCHOR)
         self.time_interval_label.pack(**pack_params)
-        #self.time_interval_label.place(x=5, y=130)
         self.time_interval_box = Entry(
             self, width=6, textvariable=self.shared.time_interval_var)
         self.time_interval_box.pack(pady=(0, PAD), **pack_params)
-        #self.time_interval_box.place(x=280, y=132)
 
         # Time-Exit information
         self.time_exit_label = Label(
@@ -262,21 +252,17 @@ class OptionsSelectionUi(LabelFrame):
             text="Time for exiting if no change in folders (min):",
             anchor=TK_W_ANCHOR)
         self.time_exit_label.pack(**pack_params)
-        #self.time_exit_label.place(x=5, y=155)
         self.time_exit_box = Entry(
             self, width=6, textvariable=self.shared.time_exit_var)
         self.time_exit_box.pack(pady=(0, PAD), **pack_params)
-        #self.time_exit_box.place(x=280, y=157)
 
         # E-mail information
         self.mail_label = Label(
             self, text="Send Summary to:", anchor=TK_W_ANCHOR)
         self.mail_label.pack(**pack_params)
-        #self.mail_label.place(x=5, y=180)
         self.mail_box = Entry(
             self, justify=LEFT, width=25, textvariable=self.shared.mail_var)
         self.mail_box.pack(**pack_params)
-        #self.mail_box.place(x=115, y=182)
 
 
 class RobocopyGUI(Frame):
@@ -368,7 +354,6 @@ class RobocopyGUI(Frame):
         '''callback for running the copy.
 
         '''
-
         robocopy_kwargs = dict(
             source=self.shared.source_var.get(),
             destinations=[
@@ -421,7 +406,7 @@ class RobocopyGUI(Frame):
         logging.getLogger(__name__).info(
             'Robocopy aborted by user. Please wait ...')
         self._stop_running_threads()
-        # self._stop_robocopy_processes()
+        self._stop_robocopy_processes()
         logging.getLogger(__name__).info('... done')
 
     def quit(self, *args):
@@ -429,7 +414,7 @@ class RobocopyGUI(Frame):
         '''
         logging.getLogger(__name__).info('FAIM-robocopy terminated by user')
         self._stop_running_threads()
-        # self._stop_robocopy_processes()
+        self._stop_robocopy_processes()
         self.parent.destroy()
 
     def _stop_running_threads(self):
@@ -452,8 +437,8 @@ class RobocopyGUI(Frame):
             try:
                 if proc.name() == 'Robocopy.exe':
                     psutil.Process(proc.pid).terminate()
-                elif proc.name() == 'conhost.exe':
-                    psutil.Process(proc.pid).terminate()
+                #elif proc.name() == 'conhost.exe':
+                #    psutil.Process(proc.pid).terminate()
             except psutil.Error as err:
                 logging.getLogger(__name__).error(
                     'Could not terminate process %s. Error message: %s',
