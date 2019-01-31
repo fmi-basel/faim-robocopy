@@ -9,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 from faim_robocopy.utils import compsubfolders
 from faim_robocopy.utils import delete_existing
 from faim_robocopy.utils import count_files_in_subtree
+from faim_robocopy.utils import count_identical_files
 
 
 class RobocopyTask(object):
@@ -76,10 +77,19 @@ class RobocopyTask(object):
         is_running() state is properly set on entering and exiting.
 
         '''
+        # Log start
+        logger = logging.getLogger(__name__)
 
         # check number of dest
         if not isinstance(destinations, (tuple, list)):
             destinations = [destinations]
+
+        # warn user if a destination doesnt exist...
+        for dest in destinations:
+            if dest == '' or not os.path.isdir(dest):
+                logger.warning('Destination %s does not exist!', dest)
+
+        # ...and clean it up
         destinations = [
             dest for dest in destinations
             if dest != '' and os.path.exists(dest)
@@ -95,9 +105,6 @@ class RobocopyTask(object):
 
         # Define the number of threads for copying
         max_workers = 2 if (multithread and len(destinations) >= 2) else 1
-
-        # Log start
-        logger = logging.getLogger(__name__)
 
         with ThreadPoolExecutor(max_workers=max_workers) as thread_pool:
 
@@ -187,11 +194,19 @@ class RobocopyTask(object):
 
             try:
                 filecount = count_files_in_subtree(folder)
-                logging.getLogger(__name__).info('%d files in %s',
-                                                 filecount, folder)
-            except Exception:
+
+                if folder != source:
+                    identical = count_identical_files(source, folder,
+                                                      skip_files)
+                    logger.info(
+                        '%d files (total) in %s, %d identical to source',
+                        filecount, folder, identical)
+                else:
+                    logging.getLogger(__name__).info('%d files (total) in %s',
+                                                     filecount, folder)
+            except Exception as err:
                 logging.getLogger(__name__).error(
-                    'Could not count files in %s', folder)
+                    'Could not count files in %s. Error: %s', folder, str(err))
 
         # Notify user about success.
         notifier.finished()
