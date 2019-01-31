@@ -17,6 +17,11 @@ def read_params(user_dir):
             params['source'], params['dest1'], params['dest2'] = content.split(
                 ";")
 
+        # Do not load folders that no longer exist.
+        for key, val in params.items():
+            if val != '' and not os.path.exists(val):
+                params[key] = ''
+
     except Exception as err:
         logging.getLogger(__name__).debug(
             'Could not read parameters from %s. Error: %s', param_file,
