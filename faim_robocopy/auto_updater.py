@@ -1,6 +1,7 @@
 import logging
 import sys
 import os
+import re
 
 from git import Repo
 from git import InvalidGitRepositoryError
@@ -12,8 +13,15 @@ from git import GitCommandError
 _STARTUP_CWD = os.getcwd()
 
 
+# Error raised by auto_update_from_git if the return of git pull
+# could not be associated with success or failure.
+class UnknownPullReturnCodeError(Exception):
+    pass
+
+
 # Exceptions raised by auto_update
-UpdateExceptions = (InvalidGitRepositoryError, GitCommandError)
+UpdateExceptions = (InvalidGitRepositoryError, GitCommandError,
+                    UnknownPullReturnCodeError)
 
 
 def auto_update_from_git(repo_path, remote='origin', branch=None):
@@ -54,10 +62,12 @@ def auto_update_from_git(repo_path, remote='origin', branch=None):
     retval = repo.git.pull(remote, branch)
     logging.getLogger(__name__).debug(retval)
 
-    if 'Already up to date.' in retval:
+    if re.search('Already.up.to.date', retval):
         return False
-
-    return True
+    if re.search('Updating', retval) and (re.search(
+            'file.changed', retval) or re.search('files.changed', retval)):
+        return True
+    raise UnknownPullReturnCodeError('git pull returned {}'.format(retval))
 
 
 def restart():

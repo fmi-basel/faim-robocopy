@@ -44,7 +44,6 @@ def run_robocopy_gui():
         logger.info('Updater done.')
 
     except UpdateExceptions as err:
-        print(err)
         logger.error('Auto-update failed: %s', str(err))
     except Exception as err:
         logger.error('Unexpected error during update: %s', str(err))
