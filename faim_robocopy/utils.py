@@ -29,7 +29,7 @@ def count_identical_files(source, destination, omit_files):
         if os.path.exists(dest_dir):
             comparison = dircmp(
                 current_dir, dest_dir, ignore=['*.' + omit_files])
-            common_files += len(comparison.common)
+            common_files += len(comparison.common_files)
     return common_files
 
 
