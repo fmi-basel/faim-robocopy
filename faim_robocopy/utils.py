@@ -25,8 +25,11 @@ def count_identical_files(source, destination, omit_files):
     common_files = 0
     for current_dir, _, _ in os.walk(source):
         dest_dir = re.sub(source, destination, current_dir)
-        comparison = dircmp(current_dir, dest_dir, ignore=['*.' + omit_files])
-        common_files += len(comparison.common)
+
+        if os.path.exists(dest_dir):
+            comparison = dircmp(
+                current_dir, dest_dir, ignore=['*.' + omit_files])
+            common_files += len(comparison.common)
     return common_files
 
 
@@ -142,8 +145,7 @@ def delete_existing(source, destinations):
         if len(sub_dirs) + len(files) == 0 and not current_dir == source:
 
             # only delete empty folders that exist in both destinations
-            if all((
-                    os.path.exists(re.sub(source, dest, current_dir))
+            if all((os.path.exists(re.sub(source, dest, current_dir))
                     for dest in destinations)):
                 os.rmdir(current_dir)
 
