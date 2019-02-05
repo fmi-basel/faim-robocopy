@@ -22,6 +22,7 @@ class RobocopyTask(object):
         '''
         '''
         self._running = False
+        self.futures = {}
         self._update_rate_in_s = 5.
         self._time_at_last_change = datetime.datetime.now()
 
@@ -31,6 +32,11 @@ class RobocopyTask(object):
         '''
         if self.is_running():
             logging.getLogger(__name__).warning('Stopping robocopy task')
+
+        # prevent queued jobs from starting after terminate was called.
+        for future in self.futures.values():
+            future.cancel()
+
         self._running = False
 
     def _update_changed(self):
@@ -112,7 +118,7 @@ class RobocopyTask(object):
 
             # Make at least one robocopy call for each directory
             # even if we dont have anything to do yet.
-            futures = {
+            self.futures = {
                 dest: thread_pool.submit(
                     robocopy_call,
                     source=source,
@@ -158,14 +164,15 @@ class RobocopyTask(object):
                     if not compsubfolders(source, dest, skip_files):
                         self._update_changed()
 
-                        if futures[dest].done():
-                            futures[dest] = thread_pool.submit(
+                        if self.futures[dest].done():
+                            self.futures[dest] = thread_pool.submit(
                                 robocopy_call,
                                 source=source,
                                 dest=dest,
                                 skip_files=skip_files,
                                 **robocopy_kwargs)
-                            futures[dest].add_done_callback(_robocopy_callback)
+                            self.futures[dest].add_done_callback(
+                                _robocopy_callback)
 
                 # delete files that are copied to all destinations.
                 if delete_source:
