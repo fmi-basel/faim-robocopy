@@ -207,7 +207,7 @@ def guess_user_mail(domain='fmi.ch'):
         last, first = get_display_name().split(",")
         first = first[1:]  # TODO Why?
     except Exception:
-        last, first = 'Firstname', 'LastName'
+        first, last = 'Firstname', 'Lastname'
 
     return '{first}.{last}@{domain}'.format(
         first=first, last=last, domain=domain)
