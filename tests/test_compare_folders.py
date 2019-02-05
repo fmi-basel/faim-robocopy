@@ -10,7 +10,7 @@ def test_compare(tmpdir):
     '''
     # setup
     source = tmpdir.mkdir('source_dir')
-    dest1 = tmpdir.mkdir('some_other_dir').mkdir('/dest_dir')
+    dest1 = tmpdir.mkdir('some_other_dir').mkdir('dest_dir')
 
     omit_file = 'tif'
 
@@ -74,7 +74,7 @@ def test_count_identical(tmpdir):
     '''
     # setup
     source = tmpdir.mkdir('source_dir')
-    dest1 = tmpdir.mkdir('some_other_dir').mkdir('/dest_dir')
+    dest1 = tmpdir.mkdir('some_other_dir').mkdir('dest_dir')
 
     omit_file = 'tif'
 

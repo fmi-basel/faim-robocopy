@@ -12,7 +12,7 @@ def test_delete_duplicates(tmpdir):
     # setup
     source = tmpdir.mkdir('source_dir')
     dest1 = tmpdir.mkdir('dest_dir_1')
-    dest2 = tmpdir.mkdir('some_other_dir').mkdir('/dest_dir_2')
+    dest2 = tmpdir.mkdir('some_other_dir').mkdir('dest_dir_2')
 
     # Add some empty folders
     empties = [source.mkdir('non').mkdir('sense'), source.mkdir('is_empty')]
@@ -61,7 +61,7 @@ def test_delete_duplicates_diff(tmpdir):
     # setup.
     source = tmpdir.mkdir('source_dir')
     dest1 = tmpdir.mkdir('dest_dir_1')
-    dest2 = tmpdir.mkdir('some_other_dir').mkdir('/dest_dir_2')
+    dest2 = tmpdir.mkdir('some_other_dir').mkdir('dest_dir_2')
 
     files_in = {
         source: ['a.txt', ],
