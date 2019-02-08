@@ -12,6 +12,27 @@ from faim_robocopy.utils import count_files_in_subtree
 from faim_robocopy.utils import count_identical_files
 
 
+def _sanitize_destinations(destinations):
+    '''
+    '''
+    # check number of dest
+    if not isinstance(destinations, (tuple, list)):
+        destinations = [destinations]
+
+    # warn user if a destination doesnt exist...
+    for dest in destinations:
+        if dest == '':
+            pass
+        elif not os.path.isdir(dest):
+            logging.getLogger(__name__).warning(
+                'Destination %s does not exist!', dest)
+
+    # ...and clean it up
+    return [
+        dest for dest in destinations if dest != '' and os.path.exists(dest)
+    ]
+
+
 class RobocopyTask(object):
     '''Watches a source folder and launches robocopy calls for new data.
     Provides a terminate functionality to abort running threads preliminarily.
@@ -86,20 +107,8 @@ class RobocopyTask(object):
         # Log start
         logger = logging.getLogger(__name__)
 
-        # check number of dest
-        if not isinstance(destinations, (tuple, list)):
-            destinations = [destinations]
-
-        # warn user if a destination doesnt exist...
-        for dest in destinations:
-            if dest == '' or not os.path.isdir(dest):
-                logger.warning('Destination %s does not exist!', dest)
-
-        # ...and clean it up
-        destinations = [
-            dest for dest in destinations
-            if dest != '' and os.path.exists(dest)
-        ]
+        # sanitize destinations
+        destinations = _sanitize_destinations(destinations)
 
         if len(destinations) == 0:
             raise RuntimeError('Need at least one destination to copy to.')
@@ -192,6 +201,7 @@ class RobocopyTask(object):
 
         # Report files in both folders.
         logger.info('Robocopy summary:')
+
         for folder in [
                 source,
         ] + destinations:
