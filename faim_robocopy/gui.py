@@ -284,6 +284,11 @@ class RobocopyGUI(Frame):
 
         self.build(parent)
 
+        # set minimum size of window.
+        self.parent.update_idletasks()
+        self.parent.minsize(self.parent.winfo_width(),
+                            self.parent.winfo_height())
+
     def build(self, parent):
         '''builds all components of the GUI.
 
