@@ -33,6 +33,36 @@ def _sanitize_destinations(destinations):
     ]
 
 
+def _report(source, destinations, skip_files):
+    '''report the number of present and identical files in source and
+    destination folders.
+
+    '''
+    logger = logging.getLogger(__name__)
+
+    for folder in [
+            source,
+    ] + destinations:
+
+        if folder == '':
+            continue
+
+        try:
+            filecount = count_files_in_subtree(folder)
+
+            if folder != source:
+                identical = count_identical_files(source, folder, skip_files)
+                logger.info('%d files (total) in %s, %d identical to source',
+                            filecount, folder, identical)
+            else:
+                logger.info('%d files (total) in %s',
+                            filecount, folder)
+
+        except Exception as err:
+            logger.error(
+                'Could not count files in %s. Error: %s', folder, str(err))
+
+
 class RobocopyTask(object):
     '''Watches a source folder and launches robocopy calls for new data.
     Provides a terminate functionality to abort running threads preliminarily.
@@ -201,29 +231,7 @@ class RobocopyTask(object):
 
         # Report files in both folders.
         logger.info('Robocopy summary:')
-
-        for folder in [
-                source,
-        ] + destinations:
-
-            if folder == '':
-                continue
-
-            try:
-                filecount = count_files_in_subtree(folder)
-
-                if folder != source:
-                    identical = count_identical_files(source, folder,
-                                                      skip_files)
-                    logger.info(
-                        '%d files (total) in %s, %d identical to source',
-                        filecount, folder, identical)
-                else:
-                    logging.getLogger(__name__).info('%d files (total) in %s',
-                                                     filecount, folder)
-            except Exception as err:
-                logging.getLogger(__name__).error(
-                    'Could not count files in %s. Error: %s', folder, str(err))
+        _report(source, destinations, skip_files)
 
         # Notify user about success.
         notifier.finished()
@@ -231,6 +239,25 @@ class RobocopyTask(object):
 
 def robocopy_call(source, dest, silent, secure_mode, skip_files, dry=False):
     '''run an individual robocopy call.
+
+    Parameters
+    ----------
+    source : path
+        source folder.
+    dest : path
+        destination folder.
+    silent : bool
+        silence robocopy output.
+    secure_mode : bool
+        run robocopy with secure mode flags.
+    skip_files : string
+        file ending to ignore.
+    dry : bool
+        only print the robocopy call instead of running it.
+
+    Notes
+    -----
+    An error is raised if Robocopy returns with an exit code >= 8.
 
     '''
     exclude_files = "*." + skip_files  # TODO Refactor
@@ -254,7 +281,20 @@ def robocopy_call(source, dest, silent, secure_mode, skip_files, dry=False):
         return
 
     if silent == 0:
-        FNULL = open(os.devnull, 'w')
-        subprocess.check_call(cmd, stdout=FNULL, stderr=subprocess.STDOUT)
+        call_kwargs = dict(
+            stdout=open(os.devnull, 'w'), stderr=subprocess.STDOUT)
     else:
-        subprocess.check_call(cmd)
+        call_kwargs = dict()
+
+    try:
+        subprocess.check_call(cmd, **call_kwargs)
+    except subprocess.CalledProcessError as err:
+        exit_code = err.returncode
+
+        # Return codes above 8 are errors
+        if exit_code >= 8:
+            raise
+        elif exit_code >= 2:
+            logging.getLogger(__name__).debug(
+                'Robocopy exited with code %d. This is not a failure.',
+                exit_code)
