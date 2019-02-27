@@ -13,9 +13,12 @@ from faim_robocopy.file_logger import _get_logpath
 from faim_robocopy.file_logger import add_logging_to_file
 
 
-def run_robocopy_gui():
+def run_robocopy_gui(debug):
     '''
     '''
+    if debug:
+        logging.getLogger().setLevel(logging.DEBUG)
+
     logger = logging.getLogger(__name__)
     logger.info('Starting FAIM-robocopy')
 
@@ -35,7 +38,7 @@ def run_robocopy_gui():
 
         logger.info('Looking for updates...')
         needs_restart = auto_update_from_git(
-            os.path.dirname(os.path.dirname(__file__)), 'origin', 'master')
+            os.path.dirname(os.path.dirname(__file__)), 'origin')
 
         if needs_restart:
             logger.info('Updated. Restarting FAIM-robocopy...')
