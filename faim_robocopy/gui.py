@@ -328,7 +328,7 @@ class RobocopyGUI(Frame):
         '''
         self.copy_button = Button(
             self,
-            text='Copy !',
+            text='Copy',
             width=8,
             overrelief=RIDGE,
             font="arial 10",
