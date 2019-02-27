@@ -23,6 +23,10 @@ class UnknownPullReturnCodeError(Exception):
 UpdateExceptions = (InvalidGitRepositoryError, GitCommandError,
                     UnknownPullReturnCodeError)
 
+# Silence gitpythons logger
+logging.getLogger('git').setLevel(logging.ERROR)
+logging.getLogger('git.cmd').setLevel(logging.ERROR)
+
 
 def auto_update_from_git(repo_path, remote='origin', branch=None):
     '''updates code by pulling the latest version from the remote
@@ -47,7 +51,7 @@ def auto_update_from_git(repo_path, remote='origin', branch=None):
     repo = Repo(repo_path)
 
     active_branch = repo.active_branch.name
-    logging.getLogger(__name__).debug('Active branch: %s', branch)
+    logging.getLogger(__name__).debug('Active branch: %s', active_branch)
 
     if branch is None:
         branch = active_branch
