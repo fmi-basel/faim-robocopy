@@ -5,44 +5,42 @@ FAIM Robocopy provides a user interface for the windows tool
 
 ## Installation
 
-Requirements: ```python```, ```git```,
+Requirements: ```python 3.6```, ```git```. We recommend installing
+[Anaconda](https://repo.continuum.io/) and will use it in this
+installation guide.
 
-First, clone the repository using ```git clone --recursive```.
 
-Then, setup the environment, e.g. with ```conda```:
+Open an ```Anaconda prompt``` and change to the directory where you
+want to keep ```FAIM-Robocopy```:
 
 ```
-conda create -n faim-robocopy python=3.6
+cd PATH/TO/DIR
+```
+
+where you substitute```PATH/TO/DIR``` with a path on your machine.
+
+Then, create a new conda environment and activate it:
+
+```
+conda create -n faim-robocopy python=3.6 git
 conda activate faim-robocopy
-conda install --yes --file requirements.txt
 ```
 
-Finally, we recommend creating a shortcut to ```FAIM-robocopy.pyw```
-and select the python executable from the previously
-set-up environment as application under ```run with```.
-
-### Remarks
-
-If you dont have ```git``` on your system, you can start by creating
-the conda environment and install it first, before continuing with the
-dependencies:
+Next, clone the source code from github:
 
 ```
-conda create -n faim-robocopy python=3.6
-conda activate faim-robocopy
-conda install git
-
 git clone --recursive https://github.com/fmi-basel/faim-robocopy.git
+```
+
+and install the remaining dependencies
+
+```
+cd faim-robocopy
 conda install --yes --file requirements.txt
 ```
 
-
-
-If you cloned without the ```--recursive``` option, you have to
-initialize the submodules manually:
-
-```
-cd faim-robocopy/
-git submodule init
-git submodule update
-```
+Finally, we recommend creating a shortcut to ```FAIM-robocopy.pyw```,
+where you select the python executable from the ```faim-robocopy```
+conda environment under ```run with```. You can determine the
+corresponding location of this python executable with the command
+```where pythonw``` in the anaconda prompt.
