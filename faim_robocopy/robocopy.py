@@ -193,7 +193,7 @@ class RobocopyTask:
             while self.is_running():
 
                 # prevent an early stop when the robocopy job is running long.
-                if any(future.running() or future.waiting()
+                if any(future.running()
                        for future in self.futures.values()):
                     self._update_changed()
 
