@@ -33,7 +33,7 @@ def _sanitize_destinations(destinations):
     ]
 
 
-def _report(source, destinations, skip_files):
+def _report(source, destinations, skip_files, n_deleted):
     '''report the number of present and identical files in source and
     destination folders.
 
@@ -55,15 +55,17 @@ def _report(source, destinations, skip_files):
                 logger.info('%d files (total) in %s, %d identical to source',
                             filecount, folder, identical)
             else:
-                logger.info('%d files (total) in %s',
-                            filecount, folder)
+                logger.info('%d files (total) in %s', filecount, folder)
+                if n_deleted > 0:
+                    logger.info('%d files were deleted from %s', n_deleted,
+                                folder)
 
         except Exception as err:
-            logger.error(
-                'Could not count files in %s. Error: %s', folder, str(err))
+            logger.error('Could not count files in %s. Error: %s', folder,
+                         str(err))
 
 
-class RobocopyTask(object):
+class RobocopyTask:
     '''Watches a source folder and launches robocopy calls for new data.
     Provides a terminate functionality to abort running threads preliminarily.
 
@@ -140,7 +142,7 @@ class RobocopyTask(object):
         # sanitize destinations
         destinations = _sanitize_destinations(destinations)
 
-        if len(destinations) == 0:
+        if not destinations:
             raise RuntimeError('Need at least one destination to copy to.')
 
         logging.getLogger(__name__).info('Source folder: %s', source)
@@ -150,6 +152,7 @@ class RobocopyTask(object):
 
         # Define the number of threads for copying
         max_workers = 2 if (multithread and len(destinations) >= 2) else 1
+        n_deleted = 0
 
         with ThreadPoolExecutor(max_workers=max_workers) as thread_pool:
 
@@ -189,6 +192,11 @@ class RobocopyTask(object):
             # whenever a source and destination have different content.
             while self.is_running():
 
+                # prevent an early stop when the robocopy job is running long.
+                if any(future.running() or future.waiting()
+                       for future in self.futures.values()):
+                    self._update_changed()
+
                 # Terminate if wait_exit is expired without any new
                 # file to copy.
                 if self._wait_has_expired(wait_exit * 60.):
@@ -215,7 +223,7 @@ class RobocopyTask(object):
 
                 # delete files that are copied to all destinations.
                 if delete_source:
-                    delete_existing(source, destinations)
+                    n_deleted += delete_existing(source, destinations)
 
                 # wait
                 logger.info(
@@ -231,7 +239,7 @@ class RobocopyTask(object):
 
         # Report files in both folders.
         logger.info('Robocopy summary:')
-        _report(source, destinations, skip_files)
+        _report(source, destinations, skip_files, n_deleted)
 
         # Notify user about success.
         notifier.finished()
