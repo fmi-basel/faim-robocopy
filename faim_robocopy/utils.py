@@ -45,7 +45,7 @@ def compsubfolders(source, destination, omitFile):
     dir_comparison = dircmp(source, destination, ignore=['*.' + omitFile])
 
     # are there some files that only occur in source?
-    if len(dir_comparison.left_only) > 0:
+    if dir_comparison.left_only:
         return False
 
     for racine, directories, _ in os.walk(source):
@@ -58,10 +58,27 @@ def compsubfolders(source, destination, omitFile):
                 return False
 
             dir_comparison = dircmp(path1, path2, ignore=['*.' + omitFile])
-            if len(dir_comparison.left_only) > 0:
+            if dir_comparison.left_only:
                 return False
 
     return True
+
+
+def _filter_dest(source, destinations):
+    '''remove non-existing destinations and check for equality.
+
+    '''
+    logger = logging.getLogger(__name__)
+    filtered_dest = []
+    for dest in destinations:
+        if os.path.realpath(dest) == os.path.realpath(source):
+            logger.warning('Destination %s is equal to source directory %s!',
+                           dest, source)
+        elif not os.path.exists(dest):
+            logger.warning('Destination %s doesnt exist!', dest)
+        else:
+            filtered_dest.append(dest)
+    return filtered_dest
 
 
 def delete_existing(source, destinations):
@@ -78,41 +95,31 @@ def delete_existing(source, destinations):
     logger = logging.getLogger(__name__)
     logger.info('Deleting source files that have been fully copied')
 
-    # make sure there is at least one destination.
-    def _filter_dest(source, destinations):
-        '''remove non-existing destinations and check for equality.
-
-        '''
-        filtered_dest = []
-        for dest in destinations:
-            if os.path.realpath(dest) == os.path.realpath(source):
-                logger.warning(
-                    'Destination %s is equal to source directory %s!', dest,
-                    source)
-            elif not os.path.exists(dest):
-                logger.warning('Destination %s doesnt exist!', dest)
-            else:
-                filtered_dest.append(dest)
-        return filtered_dest
-
+    # Sanitize destinations and make sure there is at least one.
     destinations = _filter_dest(source, destinations)
-    if len(destinations) == 0:
+
+    if not destinations:
         raise RuntimeError('None of the given destinations was valid. '
                            'Do not delete any files.')
 
     def _exists_in_all_destinations(path):
         '''
         '''
-        # TODO should this be a deep comparison?
         try:
             return all((filecmp.cmp(path, re.sub(source, dest, path))
                         for dest in destinations))
-        except FileNotFoundError:
+        except FileNotFoundError:  # one of the files doesnt exist.
+            return False
+        except OSError:  # one of the files couldnt be accessed.
             return False
 
-    for racine, _, files in os.walk(source):
+    # count the number of deleted files.
+    n_deleted = 0
+
+    # check for copied files in the entire file tree.
+    for current_dir, _, files in os.walk(source):
         for filename in files:
-            filepath = os.path.join(racine, filename)
+            filepath = os.path.join(current_dir, filename)
 
             # skip folders
             if os.path.isdir(filepath):
@@ -122,32 +129,28 @@ def delete_existing(source, destinations):
                 if _exists_in_all_destinations(filepath):
                     try:
                         os.remove(filepath)
-                    except Exception as err:
-                        logger.error('Could not delete %s yet. Reason: %s',
-                                     filepath, str(err))
+                        n_deleted += 1
+                    except OSError as err:
+                        logger.warning('Could not delete %s: %s', filepath,
+                                       str(err))
 
-            # Legacy catches. TODO Do we need all of these?
-            except OSError as err:
-                logger.error('Problem with deleting files. Reason: %s',
-                             str(err))
-            except ValueError as err:  # Legacy: where does this come from?
-                logger.error(
-                    'Problem with deleting files. Could not convert data to an integer.'
-                )
             except Exception as err:
                 logger.error(
-                    'Problem with deleting files. Unexpected error: %s',
-                    str(err))
-                raise
+                    'Problem with comparing/deleting file %s. Error: %s',
+                    filename, str(err))
 
     # Deleting empty folders
     for current_dir, sub_dirs, files in os.walk(source, topdown=False):
-        if len(sub_dirs) + len(files) == 0 and not current_dir == source:
+        if not sub_dirs and not files and not current_dir == source:
 
             # only delete empty folders that exist in both destinations
             if all((os.path.exists(re.sub(source, dest, current_dir))
                     for dest in destinations)):
                 os.rmdir(current_dir)
+
+    logger.info('Deleted %d files from source that were copied.', n_deleted)
+
+    return n_deleted
 
 
 # TODO Refactor naming
