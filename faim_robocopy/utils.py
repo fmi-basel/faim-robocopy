@@ -93,7 +93,7 @@ def delete_existing(source, destinations):
 
     '''
     logger = logging.getLogger(__name__)
-    logger.info('Deleting source files that have been fully copied')
+    logger.info('Checking for fully copied source files for deletion...')
 
     # Sanitize destinations and make sure there is at least one.
     destinations = _filter_dest(source, destinations)
@@ -148,7 +148,7 @@ def delete_existing(source, destinations):
                     for dest in destinations)):
                 os.rmdir(current_dir)
 
-    logger.info('Deleted %d files from source that were copied.', n_deleted)
+    logger.info('Deleted %d fully copied files from source.', n_deleted)
 
     return n_deleted
 
