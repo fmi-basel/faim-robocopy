@@ -5,6 +5,7 @@ import logging
 from tkinter import Tk
 
 from faim_robocopy.gui import RobocopyGUI
+from faim_robocopy.gui import get_window_name
 from faim_robocopy.auto_updater import auto_update_from_git
 from faim_robocopy.auto_updater import restart
 from faim_robocopy.auto_updater import UpdateExceptions
@@ -31,11 +32,11 @@ def run_robocopy_gui(debug):
                 os.getenv("TEMP"), "stderr-" + os.path.basename(sys.argv[0])),
             "w")
 
+    logfile = _get_logpath(get_user_info())
+    add_logging_to_file(logfile)
+
     # TODO consider opening a window that informs about update status.
     try:
-        logfile = _get_logpath(get_user_info())
-        add_logging_to_file(logfile)
-
         logger.info('Looking for updates...')
         needs_restart = auto_update_from_git(
             os.path.dirname(os.path.dirname(__file__)), 'origin')
@@ -53,6 +54,6 @@ def run_robocopy_gui(debug):
 
     # Start root
     root = Tk()
-    root.title("Robocopy FAIM")
+    root.title(get_window_name())
     RobocopyGUI(root, logfile)
     root.mainloop()

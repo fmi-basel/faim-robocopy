@@ -33,10 +33,15 @@ from faim_robocopy.console import ConsoleUi
 from faim_robocopy.robocopy import RobocopyTask
 from faim_robocopy.notifier import MailNotifier
 from faim_robocopy.params import read_params, dump_params
+from faim_robocopy import __version__
 
 # GUI layout constants.
 BORDERWIDTH = 5
 PAD = 10
+
+
+def get_window_name():
+    return 'Robocopy FAIM - v{}'.format(__version__)
 
 
 def choose_directory(initial_val):
