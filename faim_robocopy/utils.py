@@ -7,6 +7,10 @@ import filecmp
 from filecmp import dircmp
 from fnmatch import fnmatch
 
+# Root directory of project.
+# E.g. used for updating via gitpython.
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 
 def count_files_in_subtree(folder):
     '''count total number of files in folder and all subfolders.

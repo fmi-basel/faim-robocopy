@@ -23,7 +23,7 @@ class UnknownPullReturnCodeError(Exception):
 UpdateExceptions = (InvalidGitRepositoryError, GitCommandError,
                     UnknownPullReturnCodeError)
 
-# Silence gitpythons logger
+# Silence gitpython's logger
 logging.getLogger('git').setLevel(logging.ERROR)
 logging.getLogger('git.cmd').setLevel(logging.ERROR)
 
@@ -61,15 +61,15 @@ def auto_update_from_git(repo_path, remote='origin', branch=None):
             'Branch to update from (%s) is not the branch that is currently active (%s)!',
             branch, active_branch)
 
-    # Pull. This raises if anything goes wrong.
+    # git pull. This raises if anything goes wrong.
     logging.getLogger(__name__).debug('Pull branch %s from %s', branch, remote)
     retval = repo.git.pull(remote, branch)
     logging.getLogger(__name__).debug(retval)
 
     if re.search('Already.up.to.date', retval):
         return False
-    if re.search('Updating', retval) and (re.search(
-            'file.changed', retval) or re.search('files.changed', retval)):
+    if re.search('Updating', retval) and (re.search('file.changed', retval) or
+                                          re.search('files.changed', retval)):
         return True
     raise UnknownPullReturnCodeError('git pull returned {}'.format(retval))
 

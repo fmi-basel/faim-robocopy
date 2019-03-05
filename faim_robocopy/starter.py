@@ -6,9 +6,8 @@ from tkinter import Tk
 
 from faim_robocopy.gui import RobocopyGUI
 from faim_robocopy.gui import get_window_name
-from faim_robocopy.auto_updater import auto_update_from_git
-from faim_robocopy.auto_updater import restart
-from faim_robocopy.auto_updater import UpdateExceptions
+from faim_robocopy.gui.updater import run_updater_ui
+
 from faim_robocopy.utils import get_user_info
 from faim_robocopy.file_logger import _get_logpath
 from faim_robocopy.file_logger import add_logging_to_file
@@ -19,6 +18,9 @@ def run_robocopy_gui(debug):
     '''
     if debug:
         logging.getLogger().setLevel(logging.DEBUG)
+
+    logfile = _get_logpath(get_user_info())
+    add_logging_to_file(logfile)
 
     logger = logging.getLogger(__name__)
     logger.info('Starting FAIM-robocopy')
@@ -32,25 +34,8 @@ def run_robocopy_gui(debug):
                 os.getenv("TEMP"), "stderr-" + os.path.basename(sys.argv[0])),
             "w")
 
-    logfile = _get_logpath(get_user_info())
-    add_logging_to_file(logfile)
-
-    # TODO consider opening a window that informs about update status.
-    try:
-        logger.info('Looking for updates...')
-        needs_restart = auto_update_from_git(
-            os.path.dirname(os.path.dirname(__file__)), 'origin')
-
-        if needs_restart:
-            logger.info('Updated. Restarting FAIM-robocopy...')
-            restart()
-
-        logger.info('Updater done.')
-
-    except UpdateExceptions as err:
-        logger.error('Auto-update failed: %s', str(err))
-    except Exception as err:
-        logger.error('Unexpected error during update: %s', str(err))
+    # Run updater at startup.
+    run_updater_ui()
 
     # Start root
     root = Tk()
