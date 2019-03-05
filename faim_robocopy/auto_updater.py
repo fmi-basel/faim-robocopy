@@ -81,6 +81,9 @@ def restart():
     args = sys.argv[:]
     logging.getLogger(__name__).info('Re-spawning %s' % ' '.join(args))
 
+    # make sure all loggers release their file handles
+    logging.shutdown()
+
     args.insert(0, sys.executable)
     if sys.platform == 'win32':
         args = ['"%s"' % arg for arg in args]

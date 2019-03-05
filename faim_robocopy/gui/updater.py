@@ -74,8 +74,12 @@ class UpdaterWindow(Frame):
         '''set restart callback for button.
 
         '''
-        self.button.configure(command=restart, state='normal')
+        self.button.configure(command=self._restart_callback, state='normal')
         self.update_idletasks()
+
+    def _restart_callback(self):
+        self.quit()
+        restart()
 
     def set_done(self):
         '''enable button and disable busy cursor.
