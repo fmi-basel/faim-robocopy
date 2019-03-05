@@ -27,7 +27,8 @@ class UpdaterWindow(Frame):
     '''
 
     def __init__(self, parent):
-        '''
+        '''initialize updater window.
+
         '''
         super().__init__(
             parent, borderwidth=BORDERWIDTH, width=MINWIDTH, height=MINHEIGHT)
@@ -71,25 +72,29 @@ class UpdaterWindow(Frame):
         self.logger.debug('Created %s', type(self).__name__)
 
     def request_restart(self):
-        '''
+        '''set restart callback for button.
+
         '''
         self.button.configure(command=restart, state='normal')
         self.update_idletasks()
 
     def set_done(self):
-        '''
+        '''enable button and disable busy cursor.
+
         '''
         self.button.configure(state='normal')
         self.parent.config(cursor='')
         self.update_idletasks()
 
     def set_busy(self):
-        '''
+        '''enable busy cursor.
+
         '''
         self.parent.config(cursor='watch')
 
     def set_status(self, message, *args):
-        '''
+        '''set new message.
+
         '''
         message = message % args
         self.logger.info(message)
@@ -97,7 +102,8 @@ class UpdaterWindow(Frame):
         self.update_idletasks()
 
     def set_error(self, message, *args):
-        '''
+        '''set new error message.
+
         '''
         message = message % args
         self.logger.error(message)
@@ -105,7 +111,8 @@ class UpdaterWindow(Frame):
         self.update_idletasks()
 
     def close(self):
-        '''
+        '''close updater window.
+
         '''
         self.logger.debug('Closing %s', type(self).__name__)
         self.parent.destroy()
@@ -138,7 +145,8 @@ def _update(interface):
 
 
 def run_updater_ui():
-    '''
+    '''update code and report status in window.
+
     '''
     root = Tk()
     window = UpdaterWindow(root)

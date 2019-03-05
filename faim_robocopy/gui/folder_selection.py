@@ -6,7 +6,6 @@ from tkinter.filedialog import askdirectory
 from tkinter import W as TK_W_ANCHOR
 from tkinter import RAISED
 from tkinter import SUNKEN
-from tkinter import LEFT
 from tkinter import BOTH
 from tkinter import TOP
 
@@ -105,5 +104,3 @@ class FolderSelectionUi(LabelFrame):
         '''
         val = choose_directory(self.shared.dest2_var.get())
         self.shared.dest2_var.set(val)
-
-
