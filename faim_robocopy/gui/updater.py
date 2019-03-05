@@ -129,6 +129,8 @@ def _update(interface):
             interface.set_status(
                 'Fetched newest version. FAIM-Robocopy is going to restart...')
             interface.request_restart()
+        else:
+            interface.set_status('Updater done.')
 
     except InvalidGitRepositoryError as err:
         interface.set_error('Update failed: %s is not a valid repository.',
@@ -137,8 +139,6 @@ def _update(interface):
         interface.set_error('Update failed: %s.', str(err))
     except Exception as err:
         interface.set_error('Unexpected error during update: %s.', str(err))
-    else:
-        interface.set_status('Updater done.')
     finally:
         interface.set_done()
 
