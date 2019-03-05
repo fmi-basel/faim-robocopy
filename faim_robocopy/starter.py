@@ -8,7 +8,6 @@ from faim_robocopy.gui import RobocopyGUI
 from faim_robocopy.gui import get_window_name
 from faim_robocopy.gui.updater import run_updater_ui
 
-from faim_robocopy.utils import get_user_info
 from faim_robocopy.file_logger import _get_logpath
 from faim_robocopy.file_logger import add_logging_to_file
 
@@ -19,7 +18,7 @@ def run_robocopy_gui(debug):
     if debug:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    logfile = _get_logpath(get_user_info())
+    logfile = _get_logpath()
     add_logging_to_file(logfile)
 
     logger = logging.getLogger(__name__)

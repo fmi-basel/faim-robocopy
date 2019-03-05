@@ -21,19 +21,25 @@ def _create_logfolder_if_necessary(basedir, subdir):
     return out_dir
 
 
-def _get_logpath(user_info):
+def _get_logpath():
     '''constructs the logfile path.
 
     '''
     # Locations to check. high-priority first.
-    potential_logdirs = [user_info.get('homeshare'), user_info.get('user_dir')]
-    _subdir = 'Desktop'
+    potential_logdirs = [
+        os.environ.get('USERPROFILE'),
+        os.environ.get('HOMESHARE'),
+        os.path.expanduser('~')
+    ]
+    potential_logdirs = [
+        os.path.join(pot_dir, 'Desktop') for pot_dir in potential_logdirs
+        if pot_dir is not None
+    ]
 
     logfilename = _get_logfilename()
 
     # check locations to log to:
-    for logdir in (os.path.join(basedir, _subdir)
-                   for basedir in potential_logdirs if basedir is not None):
+    for logdir in potential_logdirs:
 
         if os.path.exists(logdir):
             logdir = _create_logfolder_if_necessary(logdir,

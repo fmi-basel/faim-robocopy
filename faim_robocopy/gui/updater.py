@@ -78,6 +78,9 @@ class UpdaterWindow(Frame):
         self.update_idletasks()
 
     def _restart_callback(self):
+        '''closes gui and restarts application.
+
+        '''
         self.quit()
         restart()
 
