@@ -13,9 +13,11 @@ from faim_robocopy.auto_updater import UpdateExceptions
 from faim_robocopy.auto_updater import InvalidGitRepositoryError
 from faim_robocopy.auto_updater import auto_update_from_git
 from faim_robocopy.auto_updater import restart
-from faim_robocopy.gui.defaults import PAD, BORDERWIDTH
+from faim_robocopy.gui.defaults import PAD
+from faim_robocopy.gui.defaults import BORDERWIDTH
+from faim_robocopy.gui.defaults import BUTTONWIDTH
 
-MINWIDTH = 300
+MINWIDTH = 320
 MINHEIGHT = 100
 
 UPDATER_TITLE = 'FAIM-robocopy Updater'
@@ -52,21 +54,18 @@ class UpdaterWindow(Frame):
 
         # Message view.
         self.message = Message(
-            label_frame, textvariable=self.content, width=180)
+            label_frame, textvariable=self.content, width=170)
         self.message.pack(
-            side='left',
-            padx=PAD,
-            pady=PAD,
-            expand=True,
-            anchor='w')
+            side='left', padx=PAD, pady=PAD, expand=True, anchor='w')
 
         # Button.
         self.button = Button(
-            label_frame, text='OK', state='disabled', command=self.close)
+            label_frame,
+            text='OK',
+            state='disabled',
+            command=self.close,
+            width=BUTTONWIDTH)
         self.button.pack(side='bottom', fill='both', padx=PAD, pady=PAD)
-
-        # Register hotkey
-        self.parent.bind('<Control-q>', self.quit)
 
         # Init done.
         self.logger.debug('Created %s', type(self).__name__)
