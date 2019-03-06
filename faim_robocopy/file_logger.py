@@ -8,7 +8,7 @@ def _get_logfilename():
 
     '''
     return 'Robocopy_Logfile_{}.html'.format(
-        datetime.datetime.now().strftime("%H-%M-%S"))
+        datetime.datetime.now().strftime("%y-%m-%d_%H-%M-%S"))
 
 
 def _create_logfolder_if_necessary(basedir, subdir):
