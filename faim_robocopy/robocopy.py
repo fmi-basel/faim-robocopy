@@ -193,8 +193,7 @@ class RobocopyTask:
             while self.is_running():
 
                 # prevent an early stop when the robocopy job is running long.
-                if any(future.running()
-                       for future in self.futures.values()):
+                if any(future.running() for future in self.futures.values()):
                     self._update_changed()
 
                 # Terminate if wait_exit is expired without any new
@@ -288,11 +287,9 @@ def robocopy_call(source, dest, silent, secure_mode, skip_files, dry=False):
         logging.getLogger(__name__).info('Dry run: %s', ' '.join(cmd))
         return
 
+    call_kwargs = dict()
     if silent == 0:
-        call_kwargs = dict(
-            stdout=open(os.devnull, 'w'), stderr=subprocess.STDOUT)
-    else:
-        call_kwargs = dict()
+        call_kwargs['shell'] = True
 
     try:
         subprocess.check_call(cmd, **call_kwargs)
