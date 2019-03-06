@@ -24,6 +24,7 @@ from faim_robocopy.notifier import MailNotifier
 from faim_robocopy.params import read_params, dump_params
 from faim_robocopy import __version__
 from faim_robocopy.gui.defaults import PAD, BORDERWIDTH
+from faim_robocopy.gui.callback_decorator import decorate_callback
 
 from .shared_resources import SharedResources
 from .folder_selection import FolderSelectionUi
@@ -96,6 +97,7 @@ class RobocopyGUI(Frame):
         self.horizontal_panes.add(self.console_frame)
         self.horizontal_panes.pack(expand=True, fill=BOTH, padx=PAD, pady=PAD)
 
+        # add buttons
         self.add_copy_and_abort()
 
         # register quit's
@@ -113,7 +115,8 @@ class RobocopyGUI(Frame):
             overrelief=RIDGE,
             font="arial 10",
             command=self.do_copy)
-        self.copy_button.config(bg="yellow green", fg="black")
+        self.copy_button.config(
+            bg="yellow green", fg="black", disabledforeground='darkgrey')
         self.copy_button.pack(side=LEFT, padx=PAD, pady=PAD)
         self.cancel_button = Button(
             self,
@@ -121,8 +124,12 @@ class RobocopyGUI(Frame):
             width=8,
             overrelief=RIDGE,
             font="arial 10",
-            command=self.abort)
-        self.cancel_button.config(bg="tomato", fg="black")
+            command=self.abort,
+            state='disable')
+        self.cancel_button.config(
+            background='tomato',
+            activeforeground='black',
+            disabledforeground='darkgrey')
         self.cancel_button.pack(side=LEFT, padx=PAD, pady=PAD)
 
     def do_copy(self):
@@ -171,11 +178,15 @@ class RobocopyGUI(Frame):
 
         self.robocopy = RobocopyTask()
         self.robocopy_thread = Thread(
-            target=self.robocopy.run, kwargs=robocopy_kwargs)
+            target=decorate_callback(self.robocopy.run,
+                                     self._enter_toggle_buttons,
+                                     self._exit_toggle_buttons),
+            kwargs=robocopy_kwargs)
         self.robocopy_thread.start()
 
     def abort(self):
-        '''
+        '''stop running robocopy processes.
+
         '''
         logging.getLogger(__name__).info(
             'Robocopy aborted by user. Please wait ...')
@@ -184,12 +195,36 @@ class RobocopyGUI(Frame):
         logging.getLogger(__name__).info('... done')
 
     def quit(self, *args):
-        '''
+        '''exit gui and clean-up running robocopy processes.
+
         '''
         logging.getLogger(__name__).info('FAIM-robocopy terminated by user')
         self._stop_running_threads()
         self._stop_robocopy_processes()
         self.parent.destroy()
+
+    def _enter_toggle_buttons(self):
+        '''toggle active/disabled state of buttons before robocopy call.
+
+        '''
+        self.copy_button.configure(state='disable')
+        self.cancel_button.configure(state='normal')
+
+    def _exit_toggle_buttons(self):
+        '''toggle active/disabled state of buttons at exit of robocopy call.
+
+        '''
+        try:
+            self.copy_button.configure(state='normal')
+            self.cancel_button.configure(state='disable')
+
+        # ignore errors that arise from trying to switch the state
+        # when the UI is already closed.
+        except RuntimeError as err:
+            if 'main thread is not in main loop' in str(err):
+                pass
+            else:
+                raise
 
     def _stop_running_threads(self):
         '''stop all worker threads.
