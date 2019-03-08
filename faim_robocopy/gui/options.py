@@ -11,6 +11,7 @@ from tkinter import BOTH
 from tkinter import TOP
 
 from .defaults import PAD
+from .tooltip import ToolTip
 
 
 class OptionsSelectionUi(LabelFrame):
@@ -67,7 +68,16 @@ class OptionsSelectionUi(LabelFrame):
         self.delete_src_button.pack(pady=(0, PAD), **pack_params)
 
         self.omit_files_label = Label(
-            self, text="Omit files with extension:", anchor=TK_W_ANCHOR)
+            self,
+            text="Omit files matching the following patterns:",
+            anchor=TK_W_ANCHOR)
+        ToolTip(
+            self.omit_files_label,
+            'Separate multiple patterns with semicolons and use wildcards '
+            'like * to match several files. '
+            'Example: *.tif; some*.hdf5; test.csv',
+            wraplength=500)
+
         self.omit_files_label.pack(**pack_params)
         self.omit_files_box = Entry(
             self, width=3, textvariable=self.shared.omit_files_var)
