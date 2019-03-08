@@ -4,7 +4,8 @@ import re
 import getpass
 import logging
 import filecmp
-from filecmp import dircmp
+import functools
+
 from fnmatch import fnmatch
 
 # Root directory of project.
@@ -12,63 +13,70 @@ from fnmatch import fnmatch
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def count_files_in_subtree(folder):
+def count_files_in_subtree(folder, file_filter=None):
     '''count total number of files in folder and all subfolders.
 
     '''
-    return sum([len(files) for _, _, files in os.walk(folder)])
+    if file_filter is None:
+        file_filter = _no_filter
+
+    return sum([len(file_filter(files)) for _, _, files in os.walk(folder)])
 
 
-def count_identical_files(source, destination, omit_files):
+def count_identical_files(source, destination, file_filter=None):
     '''counts identical files in two file trees.
 
     '''
-    # TODO Refactor
-    filecmp._filter = _filter
+    if file_filter is None:
+        file_filter = _no_filter
 
     common_files = 0
     for current_dir, _, _ in os.walk(source):
         dest_dir = re.sub(source, destination, current_dir)
 
         if os.path.exists(dest_dir):
-            comparison = dircmp(
-                current_dir, dest_dir, ignore=['*.' + omit_files])
-            (matches, _, _) = filecmp.cmpfiles(current_dir,
-                                               dest_dir,
-                                               comparison.common_files)
+
+            # collect files that are in both folders
+            potential_matches = file_filter(
+                filecmp.dircmp(current_dir, dest_dir).common_files)
+
+            # and compare them (shallow).
+            (matches, _, _) = filecmp.cmpfiles(current_dir, dest_dir,
+                                               potential_matches)
             common_files += len(matches)
     return common_files
 
 
-def is_filetree_a_subset_of(source, destination, skip_files=None):
+def is_filetree_a_subset_of(source, destination, file_filter=None):
     '''checks if destination contains a full copy of the filetree
     in source.
 
     '''
-    if not isinstance(skip_files, list) or skip_files is None:
-        skip_files = list(skip_files)
+    if file_filter is None:
+        file_filter = _no_filter
 
-    for current_source_dir, _, source_filenames in os.walk(source):
+    for current_source_dir, _, _ in os.walk(source):
 
         current_dest_dir = re.sub(source, destination, current_source_dir)
 
         if not os.path.exists(current_dest_dir):
             return False
 
-        dir_cmp = filecmp.dircmp(
-            current_source_dir, current_dest_dir, ignore=skip_files)
+        dir_cmp = filecmp.dircmp(current_source_dir, current_dest_dir)
 
-        if dir_cmp.left_only:  # there are some files in source only.
+        # are there some files in source only?
+        if file_filter(dir_cmp.left_only):
             return False
 
-        # there are some files that could not be compared.
-        if dir_cmp.funny_files:
+        # are there some files that could not be compared?
+        if file_filter(dir_cmp.funny_files):
             return False
 
         # dircmp only checks filenames, but we need at least a shallow
         # file comparison.
         (_, mismatches, errors) = filecmp.cmpfiles(
-            current_source_dir, current_dest_dir, dir_cmp.common_files)
+            current_source_dir, current_dest_dir,
+            file_filter(dir_cmp.common_files))
         if mismatches or errors:
             return False
 
@@ -92,7 +100,7 @@ def _filter_dest(source, destinations):
     return filtered_dest
 
 
-def delete_existing(source, destinations):
+def delete_existing(source, destinations, file_filter=None):
     '''delete all files that were copied to all destinations.
 
     Parameters
@@ -105,6 +113,9 @@ def delete_existing(source, destinations):
     '''
     logger = logging.getLogger(__name__)
     logger.info('Checking for fully copied source files for deletion...')
+
+    if file_filter is None:
+        file_filter = _no_filter
 
     # Sanitize destinations and make sure there is at least one.
     destinations = _filter_dest(source, destinations)
@@ -129,7 +140,7 @@ def delete_existing(source, destinations):
 
     # check for copied files in the entire file tree.
     for current_dir, _, files in os.walk(source):
-        for filename in files:
+        for filename in file_filter(files):
             filepath = os.path.join(current_dir, filename)
 
             # skip folders
@@ -164,16 +175,57 @@ def delete_existing(source, destinations):
     return n_deleted
 
 
-# TODO Refactor naming
-# TODO Try to get rid of this
-def _filter(file_list, skip_patterns):
+def create_file_filter(ignore_patterns):
+    '''creates a file filter that removes files that match any
+    of the given patterns.
+
+    '''
+    if ignore_patterns is not None or ignore_patterns == '':
+
+        if isinstance(ignore_patterns, str):
+            ignore_patterns = [
+                ignore_patterns,
+            ]
+
+        return functools.partial(
+            ignore_filter, ignore_patterns=ignore_patterns)
+
+    logging.getLogger(__name__).debug(
+        'Cannot create filter for the given patterns: %s', ignore_patterns)
+
+    def _no_filter(file_list):
+        return file_list
+
+    return _no_filter
+
+
+def ignore_filter(file_list, ignore_patterns):
     '''remove all files that match any of the given patterns.
+
+    Parameters
+    ----------
+    file_list : list of paths
+        list of paths to be filtered.
+    ignore_patterns : list of str
+        patterns matching files that are to be ignored. This supports
+        all expressions that can be matched with ```fnmatch```.
+
+    Returns
+    -------
+    filtered_files : list of paths
+        filtered file list.
 
     '''
     return [
         item for item in file_list
-        if not any(fnmatch(item, pat) for pat in skip_patterns)
+        if not any(fnmatch(item, pat) for pat in ignore_patterns)
     ]
+
+
+def _no_filter(file_list):
+    '''
+    '''
+    return file_list
 
 
 def get_display_name():

@@ -148,7 +148,7 @@ class RobocopyGUI(Frame):
             delete_source=self.shared.delete_src_var.get(),
             notifier=MailNotifier(
                 user_mail=self.shared.mail_var.get(), logfile=self.logfile),
-            skip_files=self.shared.omit_files_var.get(),
+            exclude_files=self.shared.omit_files_var.get(),
             silent=self.shared.silent_var.get(),
             secure_mode=self.shared.secure_mode_var.get())
 

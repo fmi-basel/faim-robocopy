@@ -12,6 +12,7 @@ from faim_robocopy.utils import is_filetree_a_subset_of
 from faim_robocopy.utils import delete_existing
 from faim_robocopy.utils import count_files_in_subtree
 from faim_robocopy.utils import count_identical_files
+from faim_robocopy.utils import create_file_filter
 
 
 def _sanitize_destinations(destinations):
@@ -35,7 +36,26 @@ def _sanitize_destinations(destinations):
     ]
 
 
-def _report(source, destinations, skip_files, n_deleted):
+def _sanitize_ignore_patterns(ignore_patterns, delimiter=';'):
+    '''turns a string of ignore patterns into a list of patterns.
+
+    Notes
+    -----
+    Leading or trailing whitespace is removed.
+
+    '''
+    if isinstance(ignore_patterns, str):
+        ignore_patterns = ignore_patterns.split(delimiter)
+
+    logging.getLogger(__name__).debug(
+        'Ignoring all files that match any of the following patterns: %s',
+        ignore_patterns)
+    ignore_patterns = [pat.strip(' ') for pat in ignore_patterns]
+
+    return ignore_patterns
+
+
+def _report(source, destinations, file_filter, n_deleted):
     '''report the number of present and identical files in source and
     destination folders.
 
@@ -50,10 +70,10 @@ def _report(source, destinations, skip_files, n_deleted):
             continue
 
         try:
-            filecount = count_files_in_subtree(folder)
+            filecount = count_files_in_subtree(folder, file_filter=file_filter)
 
             if folder != source:
-                identical = count_identical_files(source, folder, skip_files)
+                identical = count_identical_files(source, folder, file_filter)
                 logger.info('%d files (total) in %s, %d identical to source',
                             filecount, folder, identical)
             else:
@@ -133,7 +153,7 @@ class RobocopyTask:
             return self._run(*args, **kwargs)
 
     def _run(self, source, destinations, multithread, time_interval, wait_exit,
-             delete_source, skip_files, notifier, **robocopy_kwargs):
+             delete_source, exclude_files, notifier, **robocopy_kwargs):
         '''actual robocopy task function. Call the public method to ensure that the
         is_running() state is properly set on entering and exiting.
 
@@ -143,6 +163,10 @@ class RobocopyTask:
 
         # sanitize destinations
         destinations = _sanitize_destinations(destinations)
+
+        # sanitize ignore_patterns and turn them into a filter.
+        exclude_files = _sanitize_ignore_patterns(exclude_files)
+        file_filter = create_file_filter(exclude_files)
 
         if not destinations:
             raise RuntimeError('Need at least one destination to copy to.')
@@ -188,7 +212,7 @@ class RobocopyTask:
                     robocopy_call,
                     source=source,
                     dest=dest,
-                    skip_files=skip_files,
+                    exclude_files=exclude_files,
                     **robocopy_kwargs)
                 for dest in destinations
             }
@@ -214,7 +238,7 @@ class RobocopyTask:
                 # there are new files.
                 for dest in destinations:
 
-                    if not is_filetree_a_subset_of(source, dest, skip_files):
+                    if not is_filetree_a_subset_of(source, dest, file_filter):
                         self._update_changed()
 
                         if self.futures[dest].done():
@@ -222,7 +246,7 @@ class RobocopyTask:
                                 robocopy_call,
                                 source=source,
                                 dest=dest,
-                                skip_files=skip_files,
+                                exclude_files=exclude_files,
                                 **robocopy_kwargs)
                             self.futures[dest].add_done_callback(
                                 _robocopy_callback)
@@ -245,13 +269,13 @@ class RobocopyTask:
 
         # Report files in both folders.
         logger.info('Robocopy summary:')
-        _report(source, destinations, skip_files, n_deleted)
+        _report(source, destinations, file_filter, n_deleted)
 
         # Notify user about success.
         notifier.finished()
 
 
-def robocopy_call(source, dest, silent, secure_mode, skip_files):
+def robocopy_call(source, dest, silent, secure_mode=True, exclude_files=None):
     '''run an individual robocopy call.
 
     Parameters
@@ -264,15 +288,14 @@ def robocopy_call(source, dest, silent, secure_mode, skip_files):
         silence robocopy output.
     secure_mode : bool
         run robocopy with secure mode flags.
-    skip_files : string
-        file ending to ignore.
+    exclude_files : list of strings
+        files or file patterns to be ignored.
 
     Notes
     -----
     An error is raised if Robocopy returns with an exit code >= 8.
 
     '''
-    exclude_files = "*." + skip_files  # TODO Refactor
 
     # Robocopy syntax:
     # robocopy <Source> <Destination> [<File>[ ...]] [<Options>]
@@ -280,9 +303,12 @@ def robocopy_call(source, dest, silent, secure_mode, skip_files):
     # - /e:  copy subdirectories
     #
     # https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/robocopy
-    cmd = ["robocopy", source, dest, "/XF", exclude_files, "/e", "/COPY:DT"]
+    cmd = ['robocopy', source, dest, "/e", "/COPY:DT"]
 
-    if secure_mode == 1:
+    if exclude_files is not None and not exclude_files == '':
+        cmd.extend(['/XF', ' '.join(exclude_files)])
+
+    if secure_mode:
         cmd.append("/r:0")
         cmd.append("/w:30")
         cmd.append("/dcopy:T")
@@ -292,7 +318,7 @@ def robocopy_call(source, dest, silent, secure_mode, skip_files):
     cmd.extend(['/V', '/njh', '/njs'])
 
     call_kwargs = dict()
-    if silent == 0:
+    if silent:
         call_kwargs['shell'] = True
 
     try:
@@ -315,6 +341,7 @@ class RobocopyError(Exception):
     '''Robocopy exception for return codes >= 8.
 
     '''
+
     def __init__(self, returncode, error_info):
         '''
         '''
