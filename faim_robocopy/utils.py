@@ -33,37 +33,44 @@ def count_identical_files(source, destination, omit_files):
         if os.path.exists(dest_dir):
             comparison = dircmp(
                 current_dir, dest_dir, ignore=['*.' + omit_files])
-            common_files += len(comparison.common_files)
+            (matches, _, _) = filecmp.cmpfiles(current_dir,
+                                               dest_dir,
+                                               comparison.common_files)
+            common_files += len(matches)
     return common_files
 
 
-def compsubfolders(source, destination, omitFile):
-    '''compare subdirectories. Returns True only if the subtrees are identical
-    without considering files matching omitFile.
+def is_filetree_a_subset_of(source, destination, skip_files=None):
+    '''checks if destination contains a full copy of the filetree
+    in source.
 
     '''
-    # TODO Can we avoid this somehow?
-    # TODO Refactor omitFile
-    filecmp._filter = _filter
+    if not isinstance(skip_files, list) or skip_files is None:
+        skip_files = list(skip_files)
 
-    dir_comparison = dircmp(source, destination, ignore=['*.' + omitFile])
+    for current_source_dir, _, source_filenames in os.walk(source):
 
-    # are there some files that only occur in source?
-    if dir_comparison.left_only:
-        return False
+        current_dest_dir = re.sub(source, destination, current_source_dir)
 
-    for racine, directories, _ in os.walk(source):
-        for current_dir in directories:
-            path1 = os.path.join(racine, current_dir)
-            path2 = re.sub(source, destination, path1)
+        if not os.path.exists(current_dest_dir):
+            return False
 
-            if not os.path.exists(path2):
-                # there is a subdir that doesnt exist in destination
-                return False
+        dir_cmp = filecmp.dircmp(
+            current_source_dir, current_dest_dir, ignore=skip_files)
 
-            dir_comparison = dircmp(path1, path2, ignore=['*.' + omitFile])
-            if dir_comparison.left_only:
-                return False
+        if dir_cmp.left_only:  # there are some files in source only.
+            return False
+
+        # there are some files that could not be compared.
+        if dir_cmp.funny_files:
+            return False
+
+        # dircmp only checks filenames, but we need at least a shallow
+        # file comparison.
+        (_, mismatches, errors) = filecmp.cmpfiles(
+            current_source_dir, current_dest_dir, dir_cmp.common_files)
+        if mismatches or errors:
+            return False
 
     return True
 
