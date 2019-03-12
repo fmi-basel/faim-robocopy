@@ -47,10 +47,10 @@ def _sanitize_ignore_patterns(ignore_patterns, delimiter=';'):
     if isinstance(ignore_patterns, str):
         ignore_patterns = ignore_patterns.split(delimiter)
 
+    ignore_patterns = [pat.strip(' ') for pat in ignore_patterns]
     logging.getLogger(__name__).debug(
         'Ignoring all files that match any of the following patterns: %s',
         ignore_patterns)
-    ignore_patterns = [pat.strip(' ') for pat in ignore_patterns]
 
     return ignore_patterns
 
@@ -306,7 +306,7 @@ def robocopy_call(source, dest, silent, secure_mode=True, exclude_files=None):
     cmd = ['robocopy', source, dest, "/e", "/COPY:DT"]
 
     if exclude_files is not None and not exclude_files == '':
-        cmd.extend(['/XF', ' '.join(exclude_files)])
+        cmd.extend(['/XF', ] + exclude_files)
 
     if secure_mode:
         cmd.append("/r:0")
@@ -322,6 +322,7 @@ def robocopy_call(source, dest, silent, secure_mode=True, exclude_files=None):
         call_kwargs['shell'] = True
 
     try:
+        logging.getLogger(__name__).debug(cmd)
         subprocess.check_output(cmd, **call_kwargs)
     except subprocess.CalledProcessError as err:
         exit_code = err.returncode
