@@ -7,6 +7,8 @@ from git import Repo
 from git import InvalidGitRepositoryError
 from git import GitCommandError
 
+from .utils import PROJECT_ROOT
+
 # Grab working directory at import for restart().
 # NOTE This relies on an early import in order to work as expected.
 # NOTE (Technique from the cherrypy project)
@@ -99,12 +101,10 @@ def run_updater_bg():
 
     '''
     logger = logging.getLogger(__name__)
-    try:
-        logger.info('Looking for updates...')
-        needs_restart = auto_update_from_git(
-            os.path.dirname(os.path.dirname(__file__)), 'origin', 'master')
+    logger.info('Looking for updates...')
 
-        if needs_restart:
+    try:
+        if auto_update_from_git(PROJECT_ROOT, remote='origin'):
             logger.info('Updated. Restarting FAIM-robocopy...')
             restart()
 
