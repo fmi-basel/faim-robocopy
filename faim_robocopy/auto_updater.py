@@ -91,3 +91,26 @@ def restart():
     os.chdir(_STARTUP_CWD)
     os.execv(sys.executable, args)
     exit()
+
+
+def run_updater_bg():
+    '''try to update and restart if necessary. Progress will be logged,
+    but no user interface will be presented.
+
+    '''
+    logger = logging.getLogger(__name__)
+    try:
+        logger.info('Looking for updates...')
+        needs_restart = auto_update_from_git(
+            os.path.dirname(os.path.dirname(__file__)), 'origin', 'master')
+
+        if needs_restart:
+            logger.info('Updated. Restarting FAIM-robocopy...')
+            restart()
+
+        logger.info('Updater done.')
+
+    except UpdateExceptions as err:
+        logger.error('Auto-update failed: %s', str(err))
+    except Exception as err:
+        logger.error('Unexpected error during update: %s', str(err))

@@ -16,16 +16,14 @@ from threading import Thread
 
 import psutil
 
-from faim_robocopy.utils import get_user_info
-from faim_robocopy.robocopy import RobocopyTask
-from faim_robocopy.notifier import MailNotifier
-
-from faim_robocopy.params import read_params, dump_params
 from faim_robocopy import __version__
-from faim_robocopy.gui.defaults import PAD, BORDERWIDTH
-from faim_robocopy.gui.callback_decorator import decorate_callback
-from ..settings import read_custom_settings
+from ..utils import get_user_info
+from ..robocopy import RobocopyTask
+from ..notifier import MailNotifier
+from ..params import read_params, dump_params
 
+from .defaults import PAD, BORDERWIDTH
+from .callback_decorator import decorate_callback
 from .shared_resources import SharedResources
 from .folder_selection import FolderSelectionUi
 from .options import OptionsSelectionUi
@@ -52,7 +50,7 @@ class RobocopyGUI(Frame):
 
     '''
 
-    def __init__(self, parent, logfile):
+    def __init__(self, parent, logfile, settings):
         '''initialize gui.
 
         '''
@@ -60,7 +58,7 @@ class RobocopyGUI(Frame):
         self.parent = parent
         self.logfile = logfile
         self.user_info = get_user_info()
-        self.settings = read_custom_settings()
+        self.settings = settings
         self.shared = SharedResources(
             user_mail=self.user_info['user_mail'],
             **read_params(self.user_info['user_dir']))

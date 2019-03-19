@@ -1,15 +1,16 @@
-import sys
-import os
 import logging
 
 from tkinter import Tk
 
-from faim_robocopy.gui import RobocopyGUI
-from faim_robocopy.gui import get_window_name
-from faim_robocopy.gui.updater import run_updater_ui
+from .settings import read_custom_settings
+from .auto_updater import run_updater_bg
 
-from faim_robocopy.file_logger import _get_logpath
-from faim_robocopy.file_logger import add_logging_to_file
+from .gui import RobocopyGUI
+from .gui import get_window_name
+from .gui.updater import run_updater_ui
+
+from .file_logger import _get_logpath
+from .file_logger import add_logging_to_file
 
 
 def run_robocopy_gui(debug):
@@ -18,26 +19,25 @@ def run_robocopy_gui(debug):
     if debug:
         logging.getLogger().setLevel(logging.DEBUG)
 
+    # load custom settings
+    settings = read_custom_settings()
+
+    # init logging
     logfile = _get_logpath()
     add_logging_to_file(logfile)
 
     logger = logging.getLogger(__name__)
     logger.info('Starting FAIM-robocopy')
 
-    # Legacy code: redirect standard output streams
-    # TODO Is this really needed?
-    if sys.executable.endswith("pythonw.exe"):
-        sys.stdout = open(os.devnull, "w")
-        sys.stderr = open(
-            os.path.join(
-                os.getenv("TEMP"), "stderr-" + os.path.basename(sys.argv[0])),
-            "w")
-
     # Run updater at startup.
-    run_updater_ui()
+    if settings['updates'].getboolean('check_for_update_at_startup'):
+        if settings['updates'].getboolean('show_window'):
+            run_updater_ui()
+        else:
+            run_updater_bg()
 
     # Start root
     root = Tk()
     root.title(get_window_name())
-    RobocopyGUI(root, logfile)
+    RobocopyGUI(root, logfile, settings)
     root.mainloop()
