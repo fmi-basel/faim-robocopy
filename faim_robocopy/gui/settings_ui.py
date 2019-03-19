@@ -50,8 +50,6 @@ SETTING_NAMES = {
         'multithreaded':
         SettingsItem('Run copy to multiple destinations in parallel', 'bool',
                      None),
-        'silent':
-        SettingsItem('Do not show robocopy console', 'bool', None),
         'delete_src':
         SettingsItem('Delete copied files from source', 'bool', None),
         'omit_patters':
@@ -161,7 +159,7 @@ class SettingsUi(Toplevel):
         Checkbutton(
             parent, text=setting_item.label_text, variable=var,
             anchor='w').pack(
-                pady=(PAD/2, PAD/2), fill='x', **self.pack_params)
+                pady=(PAD / 2, PAD / 2), fill='x', **self.pack_params)
         return var
 
     def _add_numeric_setting(self, parent, setting_item, value):

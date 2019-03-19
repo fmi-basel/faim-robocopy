@@ -157,7 +157,6 @@ class RobocopyGUI(Frame):
                 logfile=self.logfile,
                 **self.settings.get_mail_kwargs()),
             exclude_files=self.shared.omit_files_var.get(),
-            silent=self.shared.silent_var.get(),
             secure_mode=self.shared.secure_mode_var.get())
 
         if robocopy_kwargs['source'] == '' or not os.path.exists(

@@ -70,6 +70,7 @@ class UpdaterWindow(Frame):
         # Init done.
         self.logger.debug('Created %s', type(self).__name__)
 
+
     def request_restart(self):
         '''set restart callback for button.
 

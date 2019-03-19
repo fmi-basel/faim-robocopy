@@ -51,14 +51,6 @@ class OptionsSelectionUi(LabelFrame):
             anchor=TK_W_ANCHOR)
         self.multithreaded_button.pack(pady=(0, PAD), **pack_params)
 
-        self.silent_button = Checkbutton(
-            self,
-            text="Show Robocopy console",
-            wraplength=wrap_length,
-            variable=self.shared.silent_var,
-            anchor=TK_W_ANCHOR)
-        self.silent_button.pack(pady=(0, PAD), **pack_params)
-
         self.delete_src_button = Checkbutton(
             self,
             text="Delete files in source folder after copy",

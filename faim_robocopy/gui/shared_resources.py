@@ -26,9 +26,6 @@ class SharedResources:
         self.multithreaded_var = IntVar()
         self.multithreaded_var.set(0)
 
-        self.silent_var = IntVar()
-        self.silent_var.set(0)
-
         self.delete_src_var = IntVar()
         self.delete_src_var.set(0)
 
@@ -49,10 +46,10 @@ class SharedResources:
         '''
         section = 'default_params'
         for key, variable in zip([
-                'secure_mode', 'multithreaded', 'silent', 'delete_src',
+                'secure_mode', 'multithreaded', 'delete_src',
                 'time_to_exit_in_s', 'time_interval_in_s'
         ], [
-                self.secure_mode_var, self.multithreaded_var, self.silent_var,
+                self.secure_mode_var, self.multithreaded_var,
                 self.delete_src_var, self.time_exit_var, self.time_interval_var
         ]):
 

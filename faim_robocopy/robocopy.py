@@ -275,7 +275,7 @@ class RobocopyTask:
         notifier.finished()
 
 
-def robocopy_call(source, dest, silent, secure_mode=True, exclude_files=None):
+def robocopy_call(source, dest, secure_mode=True, exclude_files=None):
     '''run an individual robocopy call.
 
     Parameters
@@ -284,8 +284,6 @@ def robocopy_call(source, dest, silent, secure_mode=True, exclude_files=None):
         source folder.
     dest : path
         destination folder.
-    silent : bool
-        silence robocopy output.
     secure_mode : bool
         run robocopy with secure mode flags.
     exclude_files : list of strings
@@ -318,8 +316,6 @@ def robocopy_call(source, dest, silent, secure_mode=True, exclude_files=None):
     cmd.extend(['/V', '/njh', '/njs'])
 
     call_kwargs = dict()
-    if silent:
-        call_kwargs['shell'] = True
 
     try:
         logging.getLogger(__name__).debug(cmd)
