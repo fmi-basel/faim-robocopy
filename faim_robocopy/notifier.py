@@ -28,12 +28,14 @@ class MailNotifier(BaseNotifier):
 
     '''
 
-    def __init__(self, user_mail, logfile):
+    def __init__(self, user_mail, logfile, smtphost, sender_address):
         '''
         '''
         self.user_mail = user_mail
         self.fail_count = 0
         self.logfile = logfile
+        self.smtp_kwargs = dict(
+            smtphost=smtphost, sender_address=sender_address)
 
     def failed(self, error):
         '''
@@ -43,7 +45,7 @@ class MailNotifier(BaseNotifier):
                 self.user_mail, 'Robocopy Info: ERROR',
                 'Please check summary in {}.\n'
                 'Note that further errors will not be reported by mail.'.
-                format(self.logfile))
+                format(self.logfile), **self.smtp_kwargs)
 
         self.fail_count += 1
 
@@ -51,7 +53,8 @@ class MailNotifier(BaseNotifier):
         '''
         '''
         send_mail(self.user_mail, self._get_finish_headline(),
-                  'Please check summary in {}'.format(self.logfile))
+                  'Please check summary in {}'.format(self.logfile),
+                  **self.smtp_kwargs)
 
     def _get_finish_headline(self):
         '''construct head of finish-notification.

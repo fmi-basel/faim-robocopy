@@ -43,3 +43,26 @@ class SharedResources:
 
         self.mail_var = StringVar()
         self.mail_var.set(user_mail)
+
+    def update_from_settings(self, settings):
+        '''
+        '''
+        section = 'default_params'
+        for key, variable in zip([
+                'secure_mode', 'multithreaded', 'silent', 'delete_src',
+                'time_to_exit_in_s', 'time_interval_in_s'
+        ], [
+                self.secure_mode_var, self.multithreaded_var, self.silent_var,
+                self.delete_src_var, self.time_exit_var, self.time_interval_var
+        ]):
+
+            if settings[section].get(key, None) is None:
+                continue
+
+            if key.endswith('_in_s'):
+                val = settings[section].getfloat(
+                    key) / 60.  # conversion to min.
+            else:
+                val = settings[section].getboolean(key)
+
+            variable.set(val)

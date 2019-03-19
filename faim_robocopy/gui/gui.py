@@ -17,7 +17,6 @@ from threading import Thread
 import psutil
 
 from faim_robocopy.utils import get_user_info
-from faim_robocopy.gui.console import ConsoleUi
 from faim_robocopy.robocopy import RobocopyTask
 from faim_robocopy.notifier import MailNotifier
 
@@ -25,10 +24,13 @@ from faim_robocopy.params import read_params, dump_params
 from faim_robocopy import __version__
 from faim_robocopy.gui.defaults import PAD, BORDERWIDTH
 from faim_robocopy.gui.callback_decorator import decorate_callback
+from ..settings import read_custom_settings
 
 from .shared_resources import SharedResources
 from .folder_selection import FolderSelectionUi
 from .options import OptionsSelectionUi
+from .console import ConsoleUi
+from .settings_ui import SettingsUi
 
 
 def get_window_name():
@@ -58,9 +60,11 @@ class RobocopyGUI(Frame):
         self.parent = parent
         self.logfile = logfile
         self.user_info = get_user_info()
+        self.settings = read_custom_settings()
         self.shared = SharedResources(
             user_mail=self.user_info['user_mail'],
             **read_params(self.user_info['user_dir']))
+        self.shared.update_from_settings(self.settings)
         self.robocopy = RobocopyTask()
 
         self.build(parent)
@@ -97,6 +101,9 @@ class RobocopyGUI(Frame):
         self.horizontal_panes.add(self.console_frame)
         self.horizontal_panes.pack(expand=True, fill=BOTH, padx=PAD, pady=PAD)
 
+        # Settings window.
+        self.settings_gui = None
+
         # add buttons
         self.add_copy_and_abort()
 
@@ -108,29 +115,28 @@ class RobocopyGUI(Frame):
         '''adds the copy and abort buttons to the bottom of the gui.
 
         '''
+        button_params = dict(width=8, overrelief=RIDGE, font="arial 10")
         self.copy_button = Button(
-            self,
-            text='Copy',
-            width=8,
-            overrelief=RIDGE,
-            font="arial 10",
-            command=self.do_copy)
+            self, text='Copy', command=self.do_copy, **button_params)
         self.copy_button.config(
             bg="yellow green", fg="black", disabledforeground='darkgrey')
         self.copy_button.pack(side=LEFT, padx=PAD, pady=PAD)
+
         self.cancel_button = Button(
             self,
             text='Abort',
-            width=8,
-            overrelief=RIDGE,
-            font="arial 10",
             command=self.abort,
-            state='disable')
+            state='disable',
+            **button_params)
         self.cancel_button.config(
             background='tomato',
             activeforeground='black',
             disabledforeground='darkgrey')
         self.cancel_button.pack(side=LEFT, padx=PAD, pady=PAD)
+
+        self.settings_button = Button(
+            self, text='Settings', command=self.open_settings, **button_params)
+        self.settings_button.pack(side='right', padx=PAD, pady=PAD)
 
     def do_copy(self):
         '''callback for running the copy.
@@ -147,7 +153,9 @@ class RobocopyGUI(Frame):
             wait_exit=self.shared.time_exit_var.get(),
             delete_source=self.shared.delete_src_var.get(),
             notifier=MailNotifier(
-                user_mail=self.shared.mail_var.get(), logfile=self.logfile),
+                user_mail=self.shared.mail_var.get(),
+                logfile=self.logfile,
+                **self.settings.get_mail_kwargs()),
             exclude_files=self.shared.omit_files_var.get(),
             silent=self.shared.silent_var.get(),
             secure_mode=self.shared.secure_mode_var.get())
@@ -183,6 +191,13 @@ class RobocopyGUI(Frame):
                                      self._exit_toggle_buttons),
             kwargs=robocopy_kwargs)
         self.robocopy_thread.start()
+
+    def open_settings(self):
+        '''
+        '''
+        if self.settings_gui is not None and self.settings_gui.winfo_exists():
+            return
+        self.settings_gui = SettingsUi(self.parent)
 
     def abort(self):
         '''stop running robocopy processes.
