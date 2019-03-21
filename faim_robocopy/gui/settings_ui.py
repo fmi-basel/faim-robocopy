@@ -194,10 +194,12 @@ class SettingsUi(Toplevel):
                 messagebox.showerror(
                     'Error', 'Could not save setting for {}: {}'.format(
                         SETTING_NAMES[section_key][key].label_text, str(err)))
+                return
 
         write_custom_settings(self.settings)
-        messagebox.showinfo('Saving new settings',
-                            'New settings will be effective after restart')
+        messagebox.showinfo(
+            'Saving new settings',
+            'New settings will be effective after restart of faim robocopy.')
 
     def cancel(self):
         '''discard changes and close.
