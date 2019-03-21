@@ -315,7 +315,7 @@ def robocopy_call(source, dest, secure_mode=True, exclude_files=None):
     # remove job header and summary from log, but be verbose about files.
     cmd.extend(['/V', '/njh', '/njs'])
 
-    call_kwargs = dict()
+    call_kwargs = dict(shell=True)
 
     try:
         logging.getLogger(__name__).debug(cmd)
