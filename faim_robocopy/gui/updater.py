@@ -21,7 +21,8 @@ MINWIDTH = 320
 MINHEIGHT = 100
 
 UPDATER_TITLE = 'FAIM-robocopy Updater'
-DELAY_TO_CLOSE = 1000   # in ms
+DELAY_TO_CLOSE = 1000  # in ms
+DELAY_TO_RESTART = 1500  # in ms
 
 
 class UpdaterWindow(Frame):
@@ -77,6 +78,7 @@ class UpdaterWindow(Frame):
         '''
         self.button.configure(command=self._restart_callback, state='normal')
         self.update_idletasks()
+        self.after(DELAY_TO_RESTART, self._restart_callback)
 
     def _restart_callback(self):
         '''closes gui and restarts application.
