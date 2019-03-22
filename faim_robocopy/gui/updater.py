@@ -21,6 +21,7 @@ MINWIDTH = 320
 MINHEIGHT = 100
 
 UPDATER_TITLE = 'FAIM-robocopy Updater'
+DELAY_TO_CLOSE = 1000   # in ms
 
 
 class UpdaterWindow(Frame):
@@ -91,6 +92,7 @@ class UpdaterWindow(Frame):
         self.button.configure(state='normal')
         self.parent.config(cursor='')
         self.update_idletasks()
+        self.after(DELAY_TO_CLOSE, self.close)
 
     def set_busy(self):
         '''enable busy cursor.
