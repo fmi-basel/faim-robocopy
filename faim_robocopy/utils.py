@@ -1,5 +1,6 @@
 import ctypes
 import os
+import socket
 import re
 import getpass
 import logging
@@ -265,6 +266,13 @@ def get_user_dir():
 
     '''
     return os.path.expanduser('~')
+
+
+def get_hostname():
+    '''return the local machine's hostname.
+
+    '''
+    return socket.gethostname()
 
 
 def guess_user_mail(domain='fmi.ch'):

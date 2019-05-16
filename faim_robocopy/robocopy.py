@@ -93,13 +93,14 @@ class RobocopyTask:
 
     '''
 
-    def __init__(self):
+    def __init__(self, notifier):
         '''
         '''
         self._running = False
         self.futures = {}
         self._update_rate_in_s = 5.
         self._time_at_last_change = datetime.datetime.now()
+        self.notifier = notifier
 
     def terminate(self):
         '''requests the task to terminate.
@@ -153,7 +154,7 @@ class RobocopyTask:
             return self._run(*args, **kwargs)
 
     def _run(self, source, destinations, multithread, time_interval, wait_exit,
-             delete_source, exclude_files, notifier, **robocopy_kwargs):
+             delete_source, exclude_files, **robocopy_kwargs):
         '''actual robocopy task function. Call the public method to ensure that the
         is_running() state is properly set on entering and exiting.
 
@@ -201,7 +202,7 @@ class RobocopyTask:
                         else:
                             logger.error('Robocopy failed with error %s',
                                          error)
-                        notifier.failed(error)
+                        self.notifier.failed(error)
                     else:
                         logger.debug('Robocopy job terminated successfully')
 
@@ -272,7 +273,7 @@ class RobocopyTask:
         _report(source, destinations, file_filter, n_deleted)
 
         # Notify user about success.
-        notifier.finished()
+        self.notifier.finished()
 
 
 def robocopy_call(source, dest, secure_mode=True, exclude_files=None):

@@ -63,7 +63,7 @@ class RobocopyGUI(Frame):
             user_mail=self.user_info['user_mail'],
             **read_params(self.user_info['user_dir']))
         self.shared.update_from_settings(self.settings)
-        self.robocopy = RobocopyTask()
+        self.robocopy = RobocopyTask(None)
 
         self.build(parent)
 
@@ -140,22 +140,7 @@ class RobocopyGUI(Frame):
         '''callback for running the copy.
 
         '''
-        robocopy_kwargs = dict(
-            source=self.shared.source_var.get(),
-            destinations=[
-                self.shared.dest1_var.get(),
-                self.shared.dest2_var.get()
-            ],
-            multithread=self.shared.multithreaded_var.get(),
-            time_interval=self.shared.time_interval_var.get(),
-            wait_exit=self.shared.time_exit_var.get(),
-            delete_source=self.shared.delete_src_var.get(),
-            notifier=MailNotifier(
-                user_mail=self.shared.mail_var.get(),
-                logfile=self.logfile,
-                **self.settings.get_mail_kwargs()),
-            exclude_files=self.shared.omit_files_var.get(),
-            secure_mode=self.shared.secure_mode_var.get())
+        robocopy_kwargs = self.shared.get_robocopy_kwargs()
 
         if robocopy_kwargs['source'] == '' or not os.path.exists(
                 robocopy_kwargs['source']):
@@ -181,7 +166,11 @@ class RobocopyGUI(Frame):
             dest1=self.shared.dest1_var.get(),
             dest2=self.shared.dest2_var.get())
 
-        self.robocopy = RobocopyTask()
+        self.robocopy = RobocopyTask(
+            notifier=MailNotifier(
+                user_mail=self.shared.mail_var.get(),
+                logfile=self.logfile,
+                **self.settings.get_mail_kwargs()))
         self.robocopy_thread = Thread(
             target=decorate_callback(self.robocopy.run,
                                      self._enter_toggle_buttons,

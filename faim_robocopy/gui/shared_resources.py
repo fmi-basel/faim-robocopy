@@ -63,3 +63,17 @@ class SharedResources:
                 val = settings[section].getboolean(key)
 
             variable.set(val)
+
+    def get_robocopy_kwargs(self):
+        '''
+        '''
+        return dict(
+            source=self.source_var.get(),
+            destinations=[self.dest1_var.get(),
+                          self.dest2_var.get()],
+            multithread=self.multithreaded_var.get(),
+            time_interval=self.time_interval_var.get(),
+            wait_exit=self.time_exit_var.get(),
+            delete_source=self.delete_src_var.get(),
+            exclude_files=self.omit_files_var.get(),
+            secure_mode=self.secure_mode_var.get())
