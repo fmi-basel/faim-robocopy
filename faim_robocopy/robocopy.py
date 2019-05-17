@@ -273,7 +273,7 @@ class RobocopyTask:
         _report(source, destinations, file_filter, n_deleted)
 
         # Notify user about success.
-        self.notifier.finished()
+        self.notifier.finished(source, destinations)
 
 
 def robocopy_call(source, dest, secure_mode=True, exclude_files=None):
