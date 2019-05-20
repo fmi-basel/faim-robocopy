@@ -17,6 +17,10 @@ from threading import Thread
 import psutil
 
 from faim_robocopy import __version__
+from ..plugin_loader import collect_plugins
+from ..plugin_loader import is_activated_plugin
+from ..plugin_loader import initialize_plugin
+
 from ..utils import get_user_info
 from ..robocopy import RobocopyTask
 from ..notifier import MailNotifier
@@ -29,6 +33,7 @@ from .folder_selection import FolderSelectionUi
 from .options import OptionsSelectionUi
 from .console import ConsoleUi
 from .settings_ui import SettingsUi
+from .plugins_ui import PluginsUi
 
 
 def get_window_name():
@@ -57,14 +62,24 @@ class RobocopyGUI(Frame):
         super().__init__(parent)
         self.parent = parent
         self.logfile = logfile
+
         self.user_info = get_user_info()
         self.settings = settings
         self.shared = SharedResources(
             user_mail=self.user_info['user_mail'],
             **read_params(self.user_info['user_dir']))
         self.shared.update_from_settings(self.settings)
+
+        # Init tasks.
         self.robocopy = RobocopyTask(None)
 
+        # Init plugins.
+        self.plugins = {
+            key: initialize_plugin(plugin, self.shared)
+            for key, plugin in collect_plugins().items()
+        }
+
+        # construct interface.
         self.build(parent)
 
         # set minimum size of window.
@@ -86,8 +101,13 @@ class RobocopyGUI(Frame):
         self.folder_frame = FolderSelectionUi(self.vertical_panes, self.shared)
         self.options_frame = OptionsSelectionUi(self.vertical_panes,
                                                 self.shared)
+
         self.vertical_panes.add(self.folder_frame)
         self.vertical_panes.add(self.options_frame)
+        if self.plugins:
+            self.plugins_frame = PluginsUi(self.vertical_panes, self.plugins)
+            self.vertical_panes.add(self.plugins_frame)
+
         self.vertical_panes.pack(
             side=LEFT, expand=True, fill=BOTH, padx=PAD, pady=PAD)
 
@@ -172,21 +192,22 @@ class RobocopyGUI(Frame):
                 logfile=self.logfile,
                 **self.settings.get_mail_kwargs()))
         self.robocopy_thread = Thread(
-            target=decorate_callback(self.robocopy.run,
-                                     self._enter_toggle_buttons,
-                                     self._exit_toggle_buttons),
+            target=decorate_callback(self.robocopy.run, self._enter_toggle,
+                                     self._exit_toggle),
             kwargs=robocopy_kwargs)
         self.robocopy_thread.start()
 
     def open_settings(self):
-        '''
+        '''launches the settings gui.
+
         '''
         if self.settings_gui is not None and self.settings_gui.winfo_exists():
             return
         self.settings_gui = SettingsUi(self.parent)
 
     def abort(self):
-        '''stop running robocopy processes.
+        '''stop running robocopy processes. This is where the default parameters
+        can be modified.
 
         '''
         logging.getLogger(__name__).info(
@@ -204,20 +225,29 @@ class RobocopyGUI(Frame):
         self._stop_robocopy_processes()
         self.parent.destroy()
 
-    def _enter_toggle_buttons(self):
+    def _enter_toggle(self):
         '''toggle active/disabled state of buttons before robocopy call.
 
         '''
         self.copy_button.configure(state='disable')
         self.cancel_button.configure(state='normal')
 
-    def _exit_toggle_buttons(self):
+    def _exit_toggle(self):
         '''toggle active/disabled state of buttons at exit of robocopy call.
 
         '''
         try:
             self.copy_button.configure(state='normal')
             self.cancel_button.configure(state='disable')
+
+            try:
+                for plugin_name, plugin in self.plugins.items():
+                    # TODO add check for activation
+                    if is_activated_plugin(plugin):
+                        plugin.on_task_end()
+            except Exception as err:
+                logging.getLogger(__name__).error(
+                    'Plugin %s failed with error: %s', plugin_name, str(err))
 
         # ignore errors that arise from trying to switch the state
         # when the UI is already closed.
