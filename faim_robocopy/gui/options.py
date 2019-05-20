@@ -41,7 +41,7 @@ class OptionsSelectionUi(LabelFrame):
             wraplength=wrap_length,
             variable=self.shared.secure_mode_var,
             anchor=TK_W_ANCHOR)
-        self.secure_mode_button.pack(pady=(0, PAD), **pack_params)
+        self.secure_mode_button.pack(pady=(PAD // 2, PAD), **pack_params)
 
         self.multithreaded_button = Checkbutton(
             self,
