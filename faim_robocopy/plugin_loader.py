@@ -25,7 +25,7 @@ def collect_plugins():
 
     candidates = [
         get_module_name(path)
-        for path in glob(os.path.join(PLUGIN_DIR, '*/*py'))
+        for path in glob(os.path.join(PLUGIN_DIR, '*', 'plugin.py'))
     ]
 
     # import parent module / namespace
@@ -33,15 +33,15 @@ def collect_plugins():
     plugins = {}
 
     for candidate in candidates:
-
         if candidate.startswith('__'):
             continue
 
         try:
             module = importlib.import_module(candidate, package='plugins')
-        except Exception:
-            logging.getLogger(__name__).debug('Could not could plugin from %s',
-                                              candidate)
+        except Exception as err:
+            logging.getLogger(__name__).debug(
+                'Could not load plugin from %s. Reason: %s', candidate, err)
+            continue
 
         for key, stuff in module.__dict__.items():
             if isinstance(stuff, type) and _check_if_plugin(stuff):
