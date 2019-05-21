@@ -66,6 +66,7 @@ class PluginsUi(LabelFrame):
 
             button.grid(row=count, column=0, sticky='eswn', pady=pady)
 
+            # add button for the plugin.on_call method if available.
             if hasattr(plugin, 'on_call'):
                 button = Button(self,
                                 text='Run',

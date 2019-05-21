@@ -33,6 +33,11 @@ def _wrap(callable):
 
 
 class PluginDecorator:
+    '''decorates plugin interface methods with exception handling and
+    adds an "activated" state boolean variable.
+
+    '''
+
     def __init__(self, plugin):
         '''
         '''
@@ -56,7 +61,8 @@ class PluginDecorator:
 
 
 def collect_plugins():
-    '''
+    '''gather all plugins from the predefined plugin folder.
+
     '''
 
     def get_module_name(path):
@@ -114,13 +120,16 @@ def initialize_plugin(plugin_cls, *args, **kwargs):
 
 
 def is_activated_plugin(plugin):
-    '''
+    '''check if a plugin is currently activated.
+
     '''
     return plugin.is_activated()
 
 
 def _check_if_plugin(cls):
-    '''
+    '''check if a class provides all necessary methods to
+    be considered a valid plugin.
+    
     '''
     for method in REQUESTED_ATTR:
         if not hasattr(cls, method):
