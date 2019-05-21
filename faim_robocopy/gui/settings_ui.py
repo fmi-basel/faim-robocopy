@@ -57,9 +57,9 @@ SETTING_NAMES = {
         'omit_patters':
         SettingsItem('Default file patterns to be ignored', 'str', None),
         'time_interval_in_s':
-        SettingsItem('Time interval to launch robocopies in s', 'float', None),
+        SettingsItem('Time interval to launch robocopies in seconds', 'float', None),
         'time_to_exit_in_s':
-        SettingsItem('Time in s to wait while no chang ein folders', 'float',
+        SettingsItem('Time in seconds to wait while no change in folders', 'float',
                      None)
     }
 }
