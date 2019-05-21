@@ -1,7 +1,7 @@
 from collections import namedtuple
 
 from tkinter import Toplevel
-from tkinter import LabelFrame
+from tkinter import Frame
 from tkinter import Entry
 from tkinter import Label
 from tkinter import Button
@@ -12,9 +12,11 @@ from tkinter import BooleanVar
 from tkinter import DoubleVar
 from tkinter import messagebox
 from tkinter import TclError
+from tkinter.ttk import Notebook
 
 from .defaults import PAD
 from .defaults import BORDERWIDTH
+from .about import AboutFrame
 
 from ..settings import read_custom_settings
 from ..settings import write_custom_settings
@@ -112,14 +114,15 @@ class SettingsUi(Toplevel):
         '''builds entry and checkbox fields for all settings.
 
         '''
+        # Prepare tabs
+        self.tabcontrol = Notebook(self)
+
         for section_key in (key for key in self.settings.keys()
                             if key is not 'DEFAULT'):
 
-            label_frame = LabelFrame(self,
-                                     text=SECTION_NAMES[section_key],
-                                     borderwidth=2,
-                                     relief=RAISED)
-            label_frame.pack(fill='both', expand=True, **self.pack_params)
+            # create new tabs for each setting.
+            label_frame = Frame(self.tabcontrol, borderwidth=2, relief=RAISED)
+            self.tabcontrol.add(label_frame, text=SECTION_NAMES[section_key])
 
             for key, val in self.settings[section_key].items():
 
@@ -138,6 +141,12 @@ class SettingsUi(Toplevel):
                         label_frame, setting, val)
 
                 self.variables[(section_key, key)] = variable
+
+        # Add "About" tab:
+        self.tabcontrol.add(AboutFrame(self.tabcontrol), text='About')
+
+        # Place tabs into main window.
+        self.tabcontrol.pack(fill='both', expand=True, **self.pack_params)
 
     def _add_str_setting(self, parent, setting_item, value):
         '''
