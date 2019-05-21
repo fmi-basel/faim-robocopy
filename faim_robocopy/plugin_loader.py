@@ -1,6 +1,7 @@
 import importlib
 import logging
 import os
+import functools
 from glob import glob
 
 from tkinter import BooleanVar
@@ -11,6 +12,47 @@ PLUGIN_DIR = os.path.join(PROJECT_ROOT, 'plugins')
 
 REQUESTED_ATTR = ['on_activation', 'on_task_end', 'description']
 RESERVED_ATTR = ['_is_active_var']
+
+
+def _wrap(callable):
+    '''wraps calls to a plugin with try-except for error logging.
+    
+    '''
+
+    @functools.wraps(callable)
+    def _wrapped_plugin_call(*args, **kwargs):
+        '''
+        '''
+        try:
+            return callable(*args, **kwargs)
+        except Exception as err:
+            logging.getLogger(__name__).error('Error in %s: %s',
+                                              callable.__module__, err)
+
+    return _wrapped_plugin_call
+
+
+class PluginDecorator:
+    def __init__(self, plugin):
+        '''
+        '''
+        self.plugin = plugin
+        self._is_active_var = BooleanVar()
+
+        for method in ['on_activation', 'on_call', 'on_task_end']:
+            if not hasattr(self.plugin, method):
+                continue
+
+            setattr(self, method, _wrap(getattr(self.plugin, method)))
+
+        for attribute in ['description', 'tooltip']:
+            if hasattr(self.plugin, attribute):
+                setattr(self, attribute, getattr(self.plugin, attribute))
+
+    def is_activated(self):
+        '''
+        '''
+        return self._is_active_var.get()
 
 
 def collect_plugins():
@@ -63,8 +105,7 @@ def initialize_plugin(plugin_cls, *args, **kwargs):
     '''
     logger = logging.getLogger(__name__)
     try:
-        plugin = plugin_cls(*args, **kwargs)
-        plugin._is_active_var = BooleanVar()
+        plugin = PluginDecorator(plugin_cls(*args, **kwargs))
         logger.debug('Initialized plugin: %s', plugin_cls.__name__)
     except Exception as err:
         logger.error('Could not initialize plugin: %s', err)
@@ -75,7 +116,7 @@ def initialize_plugin(plugin_cls, *args, **kwargs):
 def is_activated_plugin(plugin):
     '''
     '''
-    return plugin._is_active_var.get()
+    return plugin.is_activated()
 
 
 def _check_if_plugin(cls):

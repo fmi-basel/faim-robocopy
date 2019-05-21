@@ -1,5 +1,6 @@
 from tkinter import LabelFrame
 from tkinter import Checkbutton
+from tkinter import Button
 from tkinter import RAISED
 from tkinter import TOP
 from tkinter import BOTH
@@ -19,16 +20,15 @@ class PluginsUi(LabelFrame):
         '''builds the folder selection frame.
 
         '''
-        super().__init__(
-            parent,
-            width=380,
-            height=230,
-            text="Plugins",
-            borderwidth=2,
-            relief=RAISED,
-            **kwargs)
+        super().__init__(parent,
+                         width=380,
+                         height=230,
+                         text="Plugins",
+                         borderwidth=2,
+                         relief=RAISED,
+                         **kwargs)
         self.pack(side=TOP, expand=True, fill=BOTH, padx=PAD, pady=PAD)
-        pack_params = dict(side=TOP, expand=False, fill='x')
+        self.columnconfigure(0, weight=1)
         pady = (PAD // 2, PAD // 2)
 
         self.plugins = plugins
@@ -38,6 +38,7 @@ class PluginsUi(LabelFrame):
             plugin is activated.
 
             '''
+
             def _callback():
                 '''
                 '''
@@ -48,13 +49,12 @@ class PluginsUi(LabelFrame):
 
         for count, plugin in enumerate(self.plugins.values()):
 
-            button = Checkbutton(
-                self,
-                text=plugin.description,
-                wraplength=wrap_length,
-                variable=plugin._is_active_var,
-                command=get_callback(plugin),
-                anchor=TK_W_ANCHOR)
+            button = Checkbutton(self,
+                                 text=plugin.description,
+                                 wraplength=wrap_length,
+                                 variable=plugin._is_active_var,
+                                 command=get_callback(plugin),
+                                 anchor=TK_W_ANCHOR)
 
             # add tooltip if information is available.
             if hasattr(plugin, 'tooltip'):
@@ -63,4 +63,18 @@ class PluginsUi(LabelFrame):
             # extra space for last entry.
             if count == len(self.plugins) - 1:
                 pady = (PAD // 2, PAD)
-            button.pack(pady=pady, **pack_params)
+
+            button.grid(row=count, column=0, sticky='eswn', pady=pady)
+
+            if hasattr(plugin, 'on_call'):
+                button = Button(self,
+                                text='Run',
+                                overrelief='sunken',
+                                command=plugin.on_call,
+                                width=4,
+                                anchor='center')
+                button.grid(row=count,
+                            column=1,
+                            sticky='we',
+                            pady=pady,
+                            padx=(0, PAD))
