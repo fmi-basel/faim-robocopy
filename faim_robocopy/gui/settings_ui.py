@@ -94,12 +94,17 @@ class SettingsUi(Toplevel):
         self.add_settings_frame()
 
         # exit buttons.
-        Button(
-            self, text='Apply', command=self.apply_settings).pack(
-                side='right', fill='both', anchor='e', pady=PAD, padx=PAD)
-        Button(
-            self, text='Cancel', command=self.cancel).pack(
-                side='right', fill='both', anchor='e', pady=PAD, padx=PAD)
+        Button(self, text='Apply',
+               command=self.apply_settings).pack(side='right',
+                                                 fill='both',
+                                                 anchor='e',
+                                                 pady=PAD,
+                                                 padx=PAD)
+        Button(self, text='Cancel', command=self.cancel).pack(side='right',
+                                                              fill='both',
+                                                              anchor='e',
+                                                              pady=PAD,
+                                                              padx=PAD)
 
         self.minsize(kwargs['width'], kwargs['height'])
 
@@ -110,11 +115,10 @@ class SettingsUi(Toplevel):
         for section_key in (key for key in self.settings.keys()
                             if key is not 'DEFAULT'):
 
-            label_frame = LabelFrame(
-                self,
-                text=SECTION_NAMES[section_key],
-                borderwidth=2,
-                relief=RAISED)
+            label_frame = LabelFrame(self,
+                                     text=SECTION_NAMES[section_key],
+                                     borderwidth=2,
+                                     relief=RAISED)
             label_frame.pack(fill='both', expand=True, **self.pack_params)
 
             for key, val in self.settings[section_key].items():
@@ -141,12 +145,13 @@ class SettingsUi(Toplevel):
         var = StringVar()
         var.set(value)
 
-        Label(
-            parent, text=setting_item.label_text, anchor='w').pack(
-                side='top', fill='x', padx=PAD)
-        Entry(
-            parent, textvariable=var).pack(
-                padx=PAD, pady=(0, PAD), side='top', expand=False, fill='x')
+        Label(parent, text=setting_item.label_text,
+              anchor='w').pack(side='top', fill='x', padx=PAD)
+        Entry(parent, textvariable=var).pack(padx=PAD,
+                                             pady=(0, PAD),
+                                             side='top',
+                                             expand=False,
+                                             fill='x')
 
         return var
 
@@ -156,10 +161,12 @@ class SettingsUi(Toplevel):
         var = BooleanVar()
         var.set(value)
 
-        Checkbutton(
-            parent, text=setting_item.label_text, variable=var,
-            anchor='w').pack(
-                pady=(PAD / 2, PAD / 2), fill='x', **self.pack_params)
+        Checkbutton(parent,
+                    text=setting_item.label_text,
+                    variable=var,
+                    anchor='w').pack(pady=(PAD / 2, PAD / 2),
+                                     fill='x',
+                                     **self.pack_params)
         return var
 
     def _add_numeric_setting(self, parent, setting_item, value):
@@ -168,16 +175,14 @@ class SettingsUi(Toplevel):
         var = DoubleVar()
         var.set(value)
 
-        Label(
-            parent, text=setting_item.label_text, anchor='w').pack(
-                side='top', fill='x', padx=PAD)
+        Label(parent, text=setting_item.label_text,
+              anchor='w').pack(side='top', fill='x', padx=PAD)
         Entry(
             parent,
             textvariable=var,
             # validate='focusout',
             # validatecommand=_check_numeric
-        ).pack(
-            padx=PAD, pady=(0, PAD), side='top', expand=False, fill='x')
+        ).pack(padx=PAD, pady=(0, PAD), side='top', expand=False, fill='x')
 
         return var
 
@@ -200,6 +205,7 @@ class SettingsUi(Toplevel):
         messagebox.showinfo(
             'Saving new settings',
             'New settings will be effective after restart of faim robocopy.')
+        self.destroy()
 
     def cancel(self):
         '''discard changes and close.
