@@ -190,7 +190,8 @@ class RobocopyGUI(Frame):
             notifier=MailNotifier(
                 user_mail=self.shared.mail_var.get(),
                 logfile=self.logfile,
-                **self.settings.get_mail_kwargs()))
+                **self.settings.get_mail_kwargs()),
+            additional_flags=self.settings.get_robocopy_flags())
         self.robocopy_thread = Thread(
             target=decorate_callback(self.robocopy.run, self._enter_toggle,
                                      self._exit_toggle),

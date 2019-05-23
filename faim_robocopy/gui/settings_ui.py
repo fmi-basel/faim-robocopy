@@ -6,7 +6,6 @@ from tkinter import Entry
 from tkinter import Label
 from tkinter import Button
 from tkinter import Checkbutton
-from tkinter import RAISED
 from tkinter import StringVar
 from tkinter import BooleanVar
 from tkinter import DoubleVar
@@ -17,6 +16,7 @@ from tkinter.ttk import Notebook
 from .defaults import PAD
 from .defaults import BORDERWIDTH
 from .about import AboutFrame
+from .tooltip import ToolTip
 
 from ..settings import read_custom_settings
 from ..settings import write_custom_settings
@@ -27,7 +27,7 @@ SettingsItem = namedtuple('SettingsItem',
 SECTION_NAMES = {
     'email': 'E-Mail',
     'updates': 'Auto-updates',
-    'default_params': 'Default parameters'
+    'default_params': 'Robocopy'
 }
 
 SETTING_NAMES = {
@@ -57,23 +57,19 @@ SETTING_NAMES = {
         'omit_patters':
         SettingsItem('Default file patterns to be ignored', 'str', None),
         'time_interval_in_s':
-        SettingsItem('Time interval to launch robocopies in seconds', 'float', None),
+        SettingsItem('Time interval to launch robocopies in seconds', 'float',
+                     None),
         'time_to_exit_in_s':
-        SettingsItem('Time in seconds to wait while no change in folders', 'float',
-                     None)
+        SettingsItem('Time in seconds to wait while no change in folders',
+                     'float', None),
+        'custom_flags':
+        SettingsItem(
+            'Additional flags (experimental)', 'str',
+            'Additional flags to be passed to robocopy. '
+            'See the official robocopy doc for more information. '
+            'Flags are passed "as-is". Use carefully.')
     }
 }
-
-
-def _check_numeric(parent, val):
-    '''check if entered value is numeric.
-
-    '''
-    try:
-        float(val)
-        return True
-    except ValueError:
-        return False
 
 
 class SettingsUi(Toplevel):
@@ -121,8 +117,11 @@ class SettingsUi(Toplevel):
                             if key is not 'DEFAULT'):
 
             # create new tabs for each setting.
-            label_frame = Frame(self.tabcontrol, borderwidth=2, relief=RAISED)
-            self.tabcontrol.add(label_frame, text=SECTION_NAMES[section_key])
+            label_frame = Frame(self.tabcontrol)
+            self.tabcontrol.add(
+                label_frame,
+                text=SECTION_NAMES[section_key],
+            )
 
             for key, val in self.settings[section_key].items():
 
@@ -154,13 +153,15 @@ class SettingsUi(Toplevel):
         var = StringVar()
         var.set(value)
 
-        Label(parent, text=setting_item.label_text,
-              anchor='w').pack(side='top', fill='x', padx=PAD)
+        lbl = Label(parent, text=setting_item.label_text, anchor='w')
+        lbl.pack(side='top', fill='x', padx=PAD)
         Entry(parent, textvariable=var).pack(padx=PAD,
                                              pady=(0, PAD),
                                              side='top',
                                              expand=False,
                                              fill='x')
+        if setting_item.tooltip is not None:
+            ToolTip(lbl, text=setting_item.tooltip)
 
         return var
 
@@ -170,12 +171,14 @@ class SettingsUi(Toplevel):
         var = BooleanVar()
         var.set(value)
 
-        Checkbutton(parent,
-                    text=setting_item.label_text,
-                    variable=var,
-                    anchor='w').pack(pady=(PAD / 2, PAD / 2),
-                                     fill='x',
-                                     **self.pack_params)
+        button = Checkbutton(parent,
+                             text=setting_item.label_text,
+                             variable=var,
+                             anchor='w')
+        button.pack(pady=(PAD / 2, PAD / 2), fill='x', **self.pack_params)
+        if setting_item.tooltip is not None:
+            ToolTip(button, text=setting_item.tooltip)
+
         return var
 
     def _add_numeric_setting(self, parent, setting_item, value):
@@ -184,14 +187,15 @@ class SettingsUi(Toplevel):
         var = DoubleVar()
         var.set(value)
 
-        Label(parent, text=setting_item.label_text,
-              anchor='w').pack(side='top', fill='x', padx=PAD)
+        lbl = Label(parent, text=setting_item.label_text, anchor='w')
+        lbl.pack(side='top', fill='x', padx=PAD)
         Entry(
             parent,
             textvariable=var,
-            # validate='focusout',
-            # validatecommand=_check_numeric
         ).pack(padx=PAD, pady=(0, PAD), side='top', expand=False, fill='x')
+
+        if setting_item.tooltip is not None:
+            ToolTip(lbl, text=setting_item.tooltip)
 
         return var
 

@@ -12,8 +12,7 @@ FNAME = '.faimrobocopy.ini'
 CUSTOM_SETTINGS_PATHS = [
     os.path.join(get_user_dir(), FNAME),
     os.path.join(get_homeshare() if get_homeshare() is not None else '',
-                 FNAME),
-    DEFAULT_SETTINGS
+                 FNAME), DEFAULT_SETTINGS
 ]
 
 
@@ -38,6 +37,15 @@ class Settings(configparser.ConfigParser):
         '''
         '''
         return dict(self['email'])
+
+    def get_robocopy_flags(self):
+        '''
+        '''
+        try:
+            return self['default_params']['custom_flags'].split(' ')
+        except Exception:
+            logging.getLogger(__name__).warning(
+                'Could not parse custom flags for robocopy.')
 
 
 def read_settings(path):
