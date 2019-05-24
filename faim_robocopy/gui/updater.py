@@ -21,8 +21,8 @@ MINWIDTH = 320
 MINHEIGHT = 100
 
 UPDATER_TITLE = 'FAIM-robocopy Updater'
-DELAY_TO_CLOSE = 1000  # in ms
-DELAY_TO_RESTART = 1500  # in ms
+DELAY_TO_CLOSE = 1200  # in ms
+DELAY_TO_RESTART = 1200  # in ms
 
 
 class UpdaterWindow(Frame):
@@ -34,13 +34,17 @@ class UpdaterWindow(Frame):
         '''initialize updater window.
 
         '''
-        super().__init__(
-            parent, borderwidth=BORDERWIDTH, width=MINWIDTH, height=MINHEIGHT)
+        super().__init__(parent,
+                         borderwidth=BORDERWIDTH,
+                         width=MINWIDTH,
+                         height=MINHEIGHT)
         self.pack(side='top', fill='both', expand=True)
 
         # Containing labelframe.
-        label_frame = LabelFrame(
-            self, text='Update status', borderwidth=2, relief=RAISED)
+        label_frame = LabelFrame(self,
+                                 text='Update status',
+                                 borderwidth=2,
+                                 relief=RAISED)
         label_frame.pack(fill='both', expand=True)
 
         #
@@ -55,18 +59,21 @@ class UpdaterWindow(Frame):
         self.content = StringVar()
 
         # Message view.
-        self.message = Message(
-            label_frame, textvariable=self.content, width=170)
-        self.message.pack(
-            side='left', padx=PAD, pady=PAD, expand=True, anchor='w')
+        self.message = Message(label_frame,
+                               textvariable=self.content,
+                               width=170)
+        self.message.pack(side='left',
+                          padx=PAD,
+                          pady=PAD,
+                          expand=True,
+                          anchor='w')
 
         # Button.
-        self.button = Button(
-            label_frame,
-            text='OK',
-            state='disabled',
-            command=self.close,
-            width=BUTTONWIDTH)
+        self.button = Button(label_frame,
+                             text='OK',
+                             state='disabled',
+                             command=self.close,
+                             width=BUTTONWIDTH)
         self.button.pack(side='bottom', fill='both', padx=PAD, pady=PAD)
 
         # Init done.
