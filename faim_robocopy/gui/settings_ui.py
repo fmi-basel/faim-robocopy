@@ -17,9 +17,11 @@ from .defaults import PAD
 from .defaults import BORDERWIDTH
 from .about import AboutFrame
 from .tooltip import ToolTip
+from .wrapping_label import WrappingLabel
 
 from ..settings import read_custom_settings
 from ..settings import write_custom_settings
+from ..robocopy import build_robocopy_command
 
 SettingsItem = namedtuple('SettingsItem',
                           ['label_text', 'variable_type', 'tooltip'])
@@ -47,8 +49,6 @@ SETTING_NAMES = {
             'If False, the update will be run silently in the background'),
     },
     'default_params': {
-        'secure_mode':
-        SettingsItem('Use secure mode by default', 'bool', None),
         'multithreaded':
         SettingsItem('Run copy to multiple destinations in parallel', 'bool',
                      None),
@@ -141,11 +141,40 @@ class SettingsUi(Toplevel):
 
                 self.variables[(section_key, key)] = variable
 
+            if section_key == 'default_params':
+                self._add_current_command(label_frame)
+
         # Add "About" tab:
         self.tabcontrol.add(AboutFrame(self.tabcontrol), text='About')
 
         # Place tabs into main window.
         self.tabcontrol.pack(fill='both', expand=True, **self.pack_params)
+
+    def _add_current_command(self, parent):
+        '''
+        '''
+        self._command = StringVar()
+        self._update_command()
+        self.variables[('default_params',
+                        'custom_flags')].trace('w', self._update_command)
+        Label(parent, text='Complete robocopy command:',
+              anchor='w').pack(side='top', fill='x', padx=PAD)
+        WrappingLabel(
+            parent,
+            textvariable=self._command,
+            anchor='w',
+            justify='left',
+            wraplength=370,  # initial size
+        ).pack(side='top', fill='x', padx=2 * PAD)
+
+    def _update_command(self, *args, **kwargs):
+        '''
+        '''
+        flags = self.variables[('default_params',
+                                'custom_flags')].get().split(' ')
+        flags = [x for x in flags if x != '']
+        self._command.set(
+            build_robocopy_command('SOURCE', 'DEST', ['EXCL'], flags))
 
     def _add_str_setting(self, parent, setting_item, value):
         '''

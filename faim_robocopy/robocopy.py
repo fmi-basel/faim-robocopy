@@ -276,32 +276,10 @@ class RobocopyTask:
         self.notifier.finished(source, destinations)
 
 
-def robocopy_call(source,
-                  dest,
-                  secure_mode=True,
-                  exclude_files=None,
-                  additional_flags=None):
-    '''run an individual robocopy call.
-
-    Parameters
-    ----------
-    source : path
-        source folder.
-    dest : path
-        destination folder.
-    secure_mode : bool
-        run robocopy with secure mode flags.
-    exclude_files : list of strings
-        files or file patterns to be ignored.
-    additional_flags : list of strings
-        additional robocopy flags to be passed "as-is". Use carefully.
-
-    Notes
-    -----
-    An error is raised if Robocopy returns with an exit code >= 8.
+def build_robocopy_command(source, dest, exclude_files, additional_flags):
+    '''builds the robocopy call command.
 
     '''
-
     # Robocopy syntax:
     # robocopy <Source> <Destination> [<File>[ ...]] [<Options>]
     # - /XF: exclude files
@@ -315,11 +293,8 @@ def robocopy_call(source,
             '/XF',
         ] + exclude_files)
 
-    if secure_mode:
-        cmd.append("/r:1")
-        cmd.append("/w:30")
-        cmd.append("/dcopy:T")
-        cmd.append("/Z")
+    # previously known as "secure mode"
+    cmd.extend(["/r:1", "/w:30", "/dcopy:T", "/Z"])
 
     # remove job header and summary from log, but be verbose about files.
     cmd.extend(['/V', '/njh', '/njs'])
@@ -327,6 +302,30 @@ def robocopy_call(source,
     # additional flags.
     if additional_flags is not None:
         cmd.extend(additional_flags)
+
+    return cmd
+
+
+def robocopy_call(source, dest, exclude_files=None, additional_flags=None):
+    '''run an individual robocopy call.
+
+    Parameters
+    ----------
+    source : path
+        source folder.
+    dest : path
+        destination folder.
+    exclude_files : list of strings
+        files or file patterns to be ignored.
+    additional_flags : list of strings
+        additional robocopy flags to be passed "as-is". Use carefully.
+
+    Notes
+    -----
+    An error is raised if Robocopy returns with an exit code >= 8.
+
+    '''
+    cmd = build_robocopy_command(source, dest, exclude_files, additional_flags)
 
     call_kwargs = dict()
 
