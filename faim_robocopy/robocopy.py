@@ -251,7 +251,8 @@ class RobocopyTask:
 
                 # delete files that are copied to all destinations.
                 if delete_source:
-                    n_deleted += delete_existing(source, destinations)
+                    n_deleted += delete_existing(source, destinations,
+                                                 file_filter)
 
                 # wait
                 if any(future.running() for future in self.futures.values()):
