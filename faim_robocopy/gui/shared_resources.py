@@ -20,9 +20,6 @@ class SharedResources:
         self.dest2_var = StringVar()
         self.dest2_var.set(dest2)
 
-        self.secure_mode_var = IntVar()
-        self.secure_mode_var.set(1)
-
         self.multithreaded_var = IntVar()
         self.multithreaded_var.set(0)
 
@@ -46,11 +43,11 @@ class SharedResources:
         '''
         section = 'default_params'
         for key, variable in zip([
-                'secure_mode', 'multithreaded', 'delete_src',
-                'time_to_exit_in_s', 'time_interval_in_s'
+                'multithreaded', 'delete_src', 'time_to_exit_in_s',
+                'time_interval_in_s'
         ], [
-                self.secure_mode_var, self.multithreaded_var,
-                self.delete_src_var, self.time_exit_var, self.time_interval_var
+                self.multithreaded_var, self.delete_src_var,
+                self.time_exit_var, self.time_interval_var
         ]):
 
             if settings[section].get(key, None) is None:
@@ -63,3 +60,17 @@ class SharedResources:
                 val = settings[section].getboolean(key)
 
             variable.set(val)
+
+    def get_robocopy_kwargs(self):
+        '''
+        '''
+        return dict(
+            source=self.source_var.get(),
+            destinations=[self.dest1_var.get(),
+                          self.dest2_var.get()],
+            multithread=self.multithreaded_var.get(),
+            time_interval=self.time_interval_var.get(),
+            wait_exit=self.time_exit_var.get(),
+            delete_source=self.delete_src_var.get(),
+            exclude_files=self.omit_files_var.get(),
+        )

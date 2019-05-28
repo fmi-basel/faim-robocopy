@@ -93,13 +93,15 @@ class RobocopyTask:
 
     '''
 
-    def __init__(self):
+    def __init__(self, notifier, additional_flags=None):
         '''
         '''
         self._running = False
         self.futures = {}
         self._update_rate_in_s = 5.
         self._time_at_last_change = datetime.datetime.now()
+        self.notifier = notifier
+        self.additional_flags = additional_flags
 
     def terminate(self):
         '''requests the task to terminate.
@@ -153,7 +155,7 @@ class RobocopyTask:
             return self._run(*args, **kwargs)
 
     def _run(self, source, destinations, multithread, time_interval, wait_exit,
-             delete_source, exclude_files, notifier, **robocopy_kwargs):
+             delete_source, exclude_files, **robocopy_kwargs):
         '''actual robocopy task function. Call the public method to ensure that the
         is_running() state is properly set on entering and exiting.
 
@@ -180,44 +182,47 @@ class RobocopyTask:
         max_workers = 2 if (multithread and len(destinations) >= 2) else 1
         n_deleted = 0
 
+        def _robocopy_callback(future):
+            '''handles the logging of robocopy jobs and sends a mail in case of
+                failure.
+
+                '''
+            if future.cancelled():
+                logger.debug('Robocopy job cancelled')
+            elif future.done():
+                error = future.exception()
+                if error:
+                    # NOTE unfortunately, we dont know which destination
+                    # the failing job had but we can report the error.
+                    if isinstance(error, RobocopyError):
+                        logger.error('%s', error)
+                    else:
+                        logger.error('Robocopy failed with error %s', error)
+                    self.notifier.failed(error)
+                else:
+                    logger.debug('Robocopy job terminated successfully')
+
+        def _submit(destination):
+            '''submits tasks for execution in thread_pool and returns its future.
+
+            '''
+            # NOTE thread_pool is resolved at call time.
+            future = thread_pool.submit(robocopy_call,
+                                        source=source,
+                                        dest=dest,
+                                        exclude_files=exclude_files,
+                                        additional_flags=self.additional_flags,
+                                        **robocopy_kwargs)
+            future.add_done_callback(_robocopy_callback)
+            return future
+
         with ThreadPoolExecutor(max_workers=max_workers) as thread_pool:
 
             self._update_changed()
 
-            def _robocopy_callback(future):
-                '''handles the logging of robocopy jobs and sends a mail in case of
-                failure.
-
-                '''
-                if future.cancelled():
-                    logger.debug('Robocopy job cancelled')
-                elif future.done():
-                    error = future.exception()
-                    if error:
-                        # NOTE unfortunately, we dont know which destination
-                        # the failing job had but we can report the error.
-                        if isinstance(error, RobocopyError):
-                            logger.error('%s', error)
-                        else:
-                            logger.error('Robocopy failed with error %s',
-                                         error)
-                        notifier.failed(error)
-                    else:
-                        logger.debug('Robocopy job terminated successfully')
-
             # Make at least one robocopy call for each directory
             # even if we dont have anything to do yet.
-            self.futures = {
-                dest: thread_pool.submit(
-                    robocopy_call,
-                    source=source,
-                    dest=dest,
-                    exclude_files=exclude_files,
-                    **robocopy_kwargs)
-                for dest in destinations
-            }
-            for future in self.futures.values():
-                future.add_done_callback(_robocopy_callback)
+            self.futures = {dest: _submit(dest) for dest in destinations}
 
             # Monitor source and dest folders and start robocopy jobs
             # whenever a source and destination have different content.
@@ -242,23 +247,20 @@ class RobocopyTask:
                         self._update_changed()
 
                         if self.futures[dest].done():
-                            self.futures[dest] = thread_pool.submit(
-                                robocopy_call,
-                                source=source,
-                                dest=dest,
-                                exclude_files=exclude_files,
-                                **robocopy_kwargs)
-                            self.futures[dest].add_done_callback(
-                                _robocopy_callback)
+                            self.futures[dest] = _submit(dest)
 
                 # delete files that are copied to all destinations.
                 if delete_source:
-                    n_deleted += delete_existing(source, destinations)
+                    n_deleted += delete_existing(source, destinations,
+                                                 file_filter)
 
                 # wait
-                logger.info(
-                    'Waiting for %1.1f min before checking for next Robocopy',
-                    float(time_interval))
+                if any(future.running() for future in self.futures.values()):
+                    logger.info('Robocopy jobs running...')
+                else:
+                    logger.info(
+                        'Waiting for %1.1f min before checking for new files to copy',
+                        float(time_interval))
 
                 # Sleep with polling for a potential terminate() signal
                 for _ in range(
@@ -272,29 +274,13 @@ class RobocopyTask:
         _report(source, destinations, file_filter, n_deleted)
 
         # Notify user about success.
-        notifier.finished()
+        self.notifier.finished(source, destinations)
 
 
-def robocopy_call(source, dest, secure_mode=True, exclude_files=None):
-    '''run an individual robocopy call.
-
-    Parameters
-    ----------
-    source : path
-        source folder.
-    dest : path
-        destination folder.
-    secure_mode : bool
-        run robocopy with secure mode flags.
-    exclude_files : list of strings
-        files or file patterns to be ignored.
-
-    Notes
-    -----
-    An error is raised if Robocopy returns with an exit code >= 8.
+def build_robocopy_command(source, dest, exclude_files, additional_flags):
+    '''builds the robocopy call command.
 
     '''
-
     # Robocopy syntax:
     # robocopy <Source> <Destination> [<File>[ ...]] [<Options>]
     # - /XF: exclude files
@@ -304,16 +290,43 @@ def robocopy_call(source, dest, secure_mode=True, exclude_files=None):
     cmd = ['robocopy', source, dest, "/e", "/COPY:DT"]
 
     if exclude_files is not None and not exclude_files == '':
-        cmd.extend(['/XF', ] + exclude_files)
+        cmd.extend([
+            '/XF',
+        ] + exclude_files)
 
-    if secure_mode:
-        cmd.append("/r:0")
-        cmd.append("/w:30")
-        cmd.append("/dcopy:T")
-        cmd.append("/Z")
+    # previously known as "secure mode"
+    cmd.extend(["/r:1", "/w:30", "/dcopy:T", "/Z"])
 
     # remove job header and summary from log, but be verbose about files.
     cmd.extend(['/V', '/njh', '/njs'])
+
+    # additional flags.
+    if additional_flags is not None:
+        cmd.extend(additional_flags)
+
+    return cmd
+
+
+def robocopy_call(source, dest, exclude_files=None, additional_flags=None):
+    '''run an individual robocopy call.
+
+    Parameters
+    ----------
+    source : path
+        source folder.
+    dest : path
+        destination folder.
+    exclude_files : list of strings
+        files or file patterns to be ignored.
+    additional_flags : list of strings
+        additional robocopy flags to be passed "as-is". Use carefully.
+
+    Notes
+    -----
+    An error is raised if Robocopy returns with an exit code >= 8.
+
+    '''
+    cmd = build_robocopy_command(source, dest, exclude_files, additional_flags)
 
     call_kwargs = dict(shell=True)
 
@@ -351,10 +364,9 @@ class RobocopyError(Exception):
         '''create a RobocopyError from a CalledProcessError.
 
         '''
-        return cls(
-            returncode=called_subprocess_error.returncode,
-            error_info=parse_errors_from_robocopy_stdout(
-                called_subprocess_error.output))
+        return cls(returncode=called_subprocess_error.returncode,
+                   error_info=parse_errors_from_robocopy_stdout(
+                       called_subprocess_error.output))
 
     def __str__(self):
         '''format error message.
@@ -362,6 +374,7 @@ class RobocopyError(Exception):
         '''
         msg = 'Robocopy returned with exit code %s.' % self.returncode
         if not self.error_info or self.error_info is None:
+
             msg += ' No detailled information available.'
             return msg
 
@@ -377,19 +390,30 @@ def parse_errors_from_robocopy_stdout(output):
     '''
     output = output.decode('UTF-8')
     logger = logging.getLogger(__name__ + '.parser')
+    RobocopyErrorInfo = namedtuple('RobocopyErrorInfo',
+                                   ['code', 'action', 'reason'])
+
     pattern = re.compile(r'ERROR\s+(\d+)\s+\(0x[0-9a-fA-F]+\)\s+(.*)\n^(.*)$',
                          re.MULTILINE)
 
     matches = re.findall(pattern, output)
-    if not matches:
-        logger.debug('Could not parse any errors from stdout of robocopy')
-        logger.debug('Raw robocopy stdout:\n %s', output)
-        return None
+    if matches:
+        return [
+            RobocopyErrorInfo(*[val.strip('\r') for val in match])
+            for match in matches
+        ]
 
-    RobocopyErrorInfo = namedtuple('RobocopyErrorInfo',
-                                   ['code', 'action', 'reason'])
+    # try to get a more general error message
+    pattern = re.compile(r'ERROR\s+:\s+(.*)$', re.MULTILINE)
+    matches = re.findall(pattern, output)
+    if matches:
+        return [
+            RobocopyErrorInfo(-1, '', match.strip('\r')) for match in matches
+        ]
 
+    logger.debug('Could not parse any errors from stdout of robocopy')
+    logger.debug('Raw robocopy stdout:\n %s', output)
     return [
-        RobocopyErrorInfo(*[val.strip('\r') for val in match])
-        for match in matches
+        RobocopyErrorInfo(
+            -1, '', 'Could not parse any errors from stdout of robocopy')
     ]

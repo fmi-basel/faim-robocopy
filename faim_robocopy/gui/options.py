@@ -35,21 +35,13 @@ class OptionsSelectionUi(LabelFrame):
         pack_params = dict(side=TOP, expand=False, fill=TK_X)
 
         # Options checkboxes
-        self.secure_mode_button = Checkbutton(
-            self,
-            text="Secure Mode (slower)",
-            wraplength=wrap_length,
-            variable=self.shared.secure_mode_var,
-            anchor=TK_W_ANCHOR)
-        self.secure_mode_button.pack(pady=(0, PAD), **pack_params)
-
         self.multithreaded_button = Checkbutton(
             self,
             text="Copy both destinations in parallel",
             wraplength=wrap_length,
             variable=self.shared.multithreaded_var,
             anchor=TK_W_ANCHOR)
-        self.multithreaded_button.pack(pady=(0, PAD), **pack_params)
+        self.multithreaded_button.pack(pady=(PAD // 2, PAD), **pack_params)
 
         self.delete_src_button = Checkbutton(
             self,
