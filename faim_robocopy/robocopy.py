@@ -209,7 +209,7 @@ class RobocopyTask:
             # NOTE thread_pool is resolved at call time.
             future = thread_pool.submit(robocopy_call,
                                         source=source,
-                                        dest=dest,
+                                        dest=destination,
                                         exclude_files=exclude_files,
                                         additional_flags=self.additional_flags,
                                         **robocopy_kwargs)
