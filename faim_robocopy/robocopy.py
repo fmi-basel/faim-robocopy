@@ -209,7 +209,7 @@ class RobocopyTask:
             # NOTE thread_pool is resolved at call time.
             future = thread_pool.submit(robocopy_call,
                                         source=source,
-                                        dest=dest,
+                                        dest=destination,
                                         exclude_files=exclude_files,
                                         additional_flags=self.additional_flags,
                                         **robocopy_kwargs)
@@ -328,7 +328,7 @@ def robocopy_call(source, dest, exclude_files=None, additional_flags=None):
     '''
     cmd = build_robocopy_command(source, dest, exclude_files, additional_flags)
 
-    call_kwargs = dict()
+    call_kwargs = dict(shell=True)
 
     try:
         logging.getLogger(__name__).debug(cmd)
