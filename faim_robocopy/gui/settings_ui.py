@@ -29,7 +29,8 @@ SettingsItem = namedtuple('SettingsItem',
 SECTION_NAMES = {
     'email': 'E-Mail',
     'updates': 'Auto-updates',
-    'default_params': 'Robocopy'
+    'default_params': 'Robocopy',
+    'logging': 'Logging'
 }
 
 SETTING_NAMES = {
@@ -68,6 +69,11 @@ SETTING_NAMES = {
             'Additional flags to be passed to robocopy. '
             'See the official robocopy doc for more information. '
             'Flags are passed "as-is". Use carefully.')
+    },
+    'logging': {
+        'clean_older_than_ndays':
+        SettingsItem('Remove log files that are older than n days', 'float',
+                     None)
     }
 }
 
@@ -117,15 +123,16 @@ class SettingsUi(Toplevel):
                             if key is not 'DEFAULT'):
 
             # create new tabs for each setting.
+            section_key_name = SECTION_NAMES.get(section_key, None)
+            if section_key_name is None:
+                continue
+
             label_frame = Frame(self.tabcontrol)
-            self.tabcontrol.add(
-                label_frame,
-                text=SECTION_NAMES[section_key],
-            )
+            self.tabcontrol.add(label_frame, text=section_key_name)
 
             for key, val in self.settings[section_key].items():
 
-                setting = SETTING_NAMES.get(section_key, None).get(key, None)
+                setting = SETTING_NAMES.get(section_key, {}).get(key, None)
 
                 if setting is None:
                     continue

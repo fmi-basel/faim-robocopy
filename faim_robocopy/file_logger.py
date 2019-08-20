@@ -2,12 +2,14 @@ import os
 import datetime
 import logging
 
+LOGFILENAME_FMT = 'Robocopy_Logfile_{}.html'
+
 
 def _get_logfilename():
     '''constructs the logfile name.
 
     '''
-    return 'Robocopy_Logfile_{}.html'.format(
+    return LOGFILENAME_FMT.format(
         datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
 
 

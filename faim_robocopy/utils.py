@@ -6,7 +6,9 @@ import getpass
 import logging
 import filecmp
 import functools
+import time
 
+from glob import glob
 from fnmatch import fnmatch
 
 # Root directory of project.
@@ -24,12 +26,24 @@ def count_files_in_subtree(folder, file_filter=None):
     return sum([len(file_filter(files)) for _, _, files in os.walk(folder)])
 
 
+def _sanitize_for_substitute(path):
+    '''replaces backslashes in windows paths with / and
+    converts Path objects to strings such that they can be used in
+    re.sub routines.
+ 
+    '''
+    return str(path).replace('\\', '/')
+
+
 def count_identical_files(source, destination, file_filter=None):
     '''counts identical files in two file trees.
 
     '''
     if file_filter is None:
         file_filter = _no_filter
+
+    source = _sanitize_for_substitute(source)
+    destination = _sanitize_for_substitute(destination)
 
     common_files = 0
     for current_dir, _, _ in os.walk(source):
@@ -48,6 +62,29 @@ def count_identical_files(source, destination, file_filter=None):
     return common_files
 
 
+def delete_files_older_than(folder, pattern, n_days):
+    '''
+    '''
+    logger = logging.getLogger(__name__)
+    logger.debug('Removing files matching %s older than %d days',
+                 os.path.join(folder, pattern), n_days)
+
+    now_in_seconds = time.time()
+    limit_in_seconds = n_days * 24 * 3600
+
+    counter = 0
+    for path in glob(os.path.join(folder, pattern)):
+        try:
+            created_in_seconds = os.path.getctime(path)
+            if now_in_seconds - created_in_seconds > limit_in_seconds:
+                os.remove(path)
+                counter += 1
+        except OSError as err:
+            logger.warning('Could not remove old file at %s: %s', path, err)
+
+    logger.debug('Removed %d files', counter)
+
+
 def is_filetree_a_subset_of(source, destination, file_filter=None):
     '''checks if destination contains a full copy of the filetree
     in source.
@@ -55,6 +92,11 @@ def is_filetree_a_subset_of(source, destination, file_filter=None):
     '''
     if file_filter is None:
         file_filter = _no_filter
+
+    source = _sanitize_for_substitute(source)
+    destination = _sanitize_for_substitute(destination)
+
+    assert os.path.exists(source)
 
     for current_source_dir, _, _ in os.walk(source):
 
@@ -75,9 +117,9 @@ def is_filetree_a_subset_of(source, destination, file_filter=None):
 
         # dircmp only checks filenames, but we need at least a shallow
         # file comparison.
-        (_, mismatches, errors) = filecmp.cmpfiles(
-            current_source_dir, current_dest_dir,
-            file_filter(dir_cmp.common_files))
+        (_, mismatches,
+         errors) = filecmp.cmpfiles(current_source_dir, current_dest_dir,
+                                    file_filter(dir_cmp.common_files))
         if mismatches or errors:
             return False
 
@@ -125,9 +167,15 @@ def delete_existing(source, destinations, file_filter=None):
         raise RuntimeError('None of the given destinations was valid. '
                            'Do not delete any files.')
 
+    source = _sanitize_for_substitute(source)
+    destinations = [_sanitize_for_substitute(dest) for dest in destinations]
+
+    assert os.path.exists(source)
+
     def _exists_in_all_destinations(path):
         '''
         '''
+        path = _sanitize_for_substitute(path)
         try:
             return all((filecmp.cmp(path, re.sub(source, dest, path))
                         for dest in destinations))
@@ -188,8 +236,8 @@ def create_file_filter(ignore_patterns):
                 ignore_patterns,
             ]
 
-        return functools.partial(
-            ignore_filter, ignore_patterns=ignore_patterns)
+        return functools.partial(ignore_filter,
+                                 ignore_patterns=ignore_patterns)
 
     logging.getLogger(__name__).debug(
         'Cannot create filter for the given patterns: %s', ignore_patterns)
@@ -285,8 +333,9 @@ def guess_user_mail(domain='fmi.ch'):
     except Exception:
         first, last = 'Firstname', 'Lastname'
 
-    return '{first}.{last}@{domain}'.format(
-        first=first, last=last, domain=domain)
+    return '{first}.{last}@{domain}'.format(first=first,
+                                            last=last,
+                                            domain=domain)
 
 
 def get_user_info():
@@ -299,8 +348,7 @@ def get_user_info():
     - user mail (guess)
 
     '''
-    return dict(
-        username=get_username(),
-        homeshare=get_homeshare(),
-        user_dir=get_user_dir(),
-        user_mail=guess_user_mail())
+    return dict(username=get_username(),
+                homeshare=get_homeshare(),
+                user_dir=get_user_dir(),
+                user_mail=guess_user_mail())
