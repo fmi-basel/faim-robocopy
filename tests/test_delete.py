@@ -3,6 +3,7 @@ import os
 import pytest
 
 from faim_robocopy.utils import delete_existing
+from faim_robocopy.utils import delete_files_older_than
 
 
 def test_delete_duplicates(tmpdir):
@@ -76,10 +77,9 @@ def test_delete_duplicates_diff(tmpdir):
     }
 
     # create files.
-    for counter, (folder, filename) in enumerate(
+    for (folder, filename) in (
         (folder, filename) for folder, files_in_folder in files_in.items()
             for filename in files_in_folder):
-        # for filename in files_in[folder]:
         filehandle = folder.join(filename)
         filehandle.write(filename)
 
@@ -98,3 +98,59 @@ def test_delete_duplicates_diff(tmpdir):
 
     for filename in files_in[source]:
         assert os.path.exists(os.path.join(str(source), filename))
+
+
+def test_delete_older_than(tmpdir):
+    '''test deleting of old files.
+
+    '''
+    # setup
+    folder = tmpdir.mkdir('some_dir')
+
+    path = folder.join('old_file.txt')
+    path.write('stuff')
+
+    delete_files_older_than(str(folder), '*txt', 0)
+    assert not os.path.exists(str(path))
+
+
+def test_not_delete_older_than(tmpdir):
+    '''test deleting of old files.
+
+    '''
+    # setup
+    folder = tmpdir.mkdir('some_dir')
+
+    path = folder.join('fresh_file.txt')
+    path.write('stuff')
+
+    delete_files_older_than(str(folder), '*txt', 1)
+    assert os.path.exists(str(path))
+
+
+def test_delete_older_than_n_with_pattern(tmpdir):
+    '''test deleting of old files.
+
+    '''
+    # setup
+    folder = tmpdir.mkdir('some_dir')
+
+    excluded_paths = [
+        folder.join(fname)
+        for fname in ['mismatch.txt', 'another.png', 'something']
+    ]
+
+    included_paths = [
+        folder.join(fname)
+        for fname in ['some_match.txt', 'another_match.png']
+    ]
+
+    for path in excluded_paths + included_paths:
+        path.write('stuff')
+
+    delete_files_older_than(str(folder), '*_match.*', 0)
+    for path in excluded_paths:
+        assert os.path.exists(str(path))
+
+    for path in included_paths:
+        assert not os.path.exists(str(path))
