@@ -8,7 +8,7 @@ from faim_robocopy.utils import create_file_filter
 def test_no_filter():
     '''
     '''
-    files = ['a.txt', 'some/thing/b.csv', 'win\dows\file']
+    files = ['a.txt', 'some/thing/b.csv', 'win\\dows\\file']
     assert files == create_file_filter(None)(files)
     assert files == create_file_filter('')(files)
     assert files == create_file_filter([])(files)
@@ -21,11 +21,13 @@ def test_no_filter():
 def test_ignore_patterns():
     '''
     '''
-    files = ['a.txt', 'some/thing/b.csv', 'win\dows\file', 'some/txt/file']
+    files = ['a.txt', 'some/thing/b.csv', 'win\\dows\\file', 'some/txt/file']
 
     assert files[1:] == create_file_filter('*.txt')(files)
     assert files[1:] == create_file_filter(['spam', '*.txt'])(files)
-    assert [files[0], ] + files[2:] == create_file_filter('*.csv')(files)
+    assert [
+        files[0],
+    ] + files[2:] == create_file_filter('*.csv')(files)
     assert files[-2:] == create_file_filter(['*.txt', '*thing*'])(files)
 
 
@@ -57,7 +59,7 @@ def test_compare(tmpdir):
             filehandle = folder.join(filename)
             filehandle.write(filename)
 
-    assert is_filetree_a_subset_of(str(source), str(dest1), file_filter)
+    assert is_filetree_a_subset_of(source, dest1, file_filter)
 
     subfolder_files = {
         'some_subdir': ['b.txt', 'c.txt'],
@@ -71,26 +73,26 @@ def test_compare(tmpdir):
                 filehandle = subfolder_h.join(filename)
                 filehandle.write(filename)
 
-    assert is_filetree_a_subset_of(str(source), str(dest1), file_filter)
+    assert is_filetree_a_subset_of(source, dest1, file_filter)
 
     new_subdir = source.mkdir('new')
-    assert not is_filetree_a_subset_of(str(source), str(dest1), file_filter)
+    assert not is_filetree_a_subset_of(source, dest1, file_filter)
 
     dest1.mkdir('new')
-    assert is_filetree_a_subset_of(str(source), str(dest1), file_filter)
+    assert is_filetree_a_subset_of(source, dest1, file_filter)
 
     # add a file that should be ignored
     filename = 'something.tif'
     filehandle = new_subdir.join(filename)
     filehandle.write(filename)
 
-    assert is_filetree_a_subset_of(str(source), str(dest1), file_filter)
+    assert is_filetree_a_subset_of(source, dest1, file_filter)
 
     filename = 'something_more.csv'
     filehandle = new_subdir.join(filename)
     filehandle.write(filename)
 
-    assert not is_filetree_a_subset_of(str(source), str(dest1), file_filter)
+    assert not is_filetree_a_subset_of(source, dest1, file_filter)
 
 
 def test_count_identical(tmpdir):
@@ -115,5 +117,5 @@ def test_count_identical(tmpdir):
             filehandle.write(filename)
 
     # do some testing
-    assert count_identical_files(str(source), str(dest1), file_filter) == 3
-    assert count_identical_files(str(source), str(dest1)) == 4
+    assert count_identical_files(source, dest1, file_filter) == 3
+    assert count_identical_files(source, dest1) == 4

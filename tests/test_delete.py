@@ -32,27 +32,27 @@ def test_delete_duplicates(tmpdir):
             filehandle = folder.join(filename)
             filehandle.write(filename)
 
-    delete_existing(str(source), [str(dest1), str(dest2)])
+    delete_existing(source, [dest1, dest2])
 
     # check that all files exists.
     for folder in [dest1, dest2]:
         for filename in files_in[folder]:
-            assert os.path.exists(os.path.join(str(folder), filename))
+            assert os.path.exists(os.path.join(folder, filename))
 
     for filename in files_in[source]:
         if filename == 'b.ini':  # this should have been deleted!
             continue
-        assert os.path.exists(os.path.join(str(source), filename))
+        assert os.path.exists(os.path.join(source, filename))
 
     # check that copied file is removed from source.
-    assert not os.path.exists(os.path.join(str(source), 'b.ini'))
+    assert not os.path.exists(os.path.join(source, 'b.ini'))
 
     # check if empty folders are treated correctly.
     for empty_dir in empties:
-        assert os.path.exists(str(empty_dir))
+        assert os.path.exists(empty_dir)
 
     for empty_dir in empties_not_for_deletion:
-        assert os.path.exists(str(empty_dir))
+        assert os.path.exists(empty_dir)
 
 
 def test_delete_duplicates_diff(tmpdir):
@@ -77,9 +77,9 @@ def test_delete_duplicates_diff(tmpdir):
     }
 
     # create files.
-    for (folder, filename) in (
-        (folder, filename) for folder, files_in_folder in files_in.items()
-            for filename in files_in_folder):
+    for (folder, filename) in ((folder, filename)
+                               for folder, files_in_folder in files_in.items()
+                               for filename in files_in_folder):
         filehandle = folder.join(filename)
         filehandle.write(filename)
 
@@ -89,15 +89,15 @@ def test_delete_duplicates_diff(tmpdir):
         filehandle.write_text(str(folder), encoding='utf-8')
 
     # do the work.
-    delete_existing(str(source), [str(dest1), str(dest2)])
+    delete_existing(source, [dest1, dest2])
 
     # check that all files exists.
     for folder in [dest1, dest2]:
         for filename in files_in[folder]:
-            assert os.path.exists(os.path.join(str(folder), filename))
+            assert os.path.exists(os.path.join(folder, filename))
 
     for filename in files_in[source]:
-        assert os.path.exists(os.path.join(str(source), filename))
+        assert os.path.exists(os.path.join(source, filename))
 
 
 def test_delete_older_than(tmpdir):
@@ -110,8 +110,8 @@ def test_delete_older_than(tmpdir):
     path = folder.join('old_file.txt')
     path.write('stuff')
 
-    delete_files_older_than(str(folder), '*txt', 0)
-    assert not os.path.exists(str(path))
+    delete_files_older_than(folder, '*txt', -0.001)
+    assert not os.path.exists(path)
 
 
 def test_not_delete_older_than(tmpdir):
@@ -124,8 +124,8 @@ def test_not_delete_older_than(tmpdir):
     path = folder.join('fresh_file.txt')
     path.write('stuff')
 
-    delete_files_older_than(str(folder), '*txt', 1)
-    assert os.path.exists(str(path))
+    delete_files_older_than(folder, '*txt', 1)
+    assert os.path.exists(path)
 
 
 def test_delete_older_than_n_with_pattern(tmpdir):
@@ -148,9 +148,9 @@ def test_delete_older_than_n_with_pattern(tmpdir):
     for path in excluded_paths + included_paths:
         path.write('stuff')
 
-    delete_files_older_than(str(folder), '*_match.*', 0)
+    delete_files_older_than(folder, '*_match.*', -0.001)
     for path in excluded_paths:
-        assert os.path.exists(str(path))
+        assert os.path.exists(path)
 
     for path in included_paths:
-        assert not os.path.exists(str(path))
+        assert not os.path.exists(path)
