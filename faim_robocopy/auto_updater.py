@@ -3,6 +3,10 @@ import sys
 import os
 import re
 
+# It seems that on some systems, the git executable is not found at start-up
+# To avoid an immediate crash, we'll reduce the error to a warning.
+os.environ['GIT_PYTHON_REFRESH'] = 'warning'
+
 from git import Repo
 from git import InvalidGitRepositoryError
 from git import GitCommandError
