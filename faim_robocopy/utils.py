@@ -26,12 +26,24 @@ def count_files_in_subtree(folder, file_filter=None):
     return sum([len(file_filter(files)) for _, _, files in os.walk(folder)])
 
 
+def _sanitize_for_substitute(path):
+    '''replaces backslashes in windows paths with / and
+    converts Path objects to strings such that they can be used in
+    re.sub routines.
+ 
+    '''
+    return str(path).replace('\\', '/')
+
+
 def count_identical_files(source, destination, file_filter=None):
     '''counts identical files in two file trees.
 
     '''
     if file_filter is None:
         file_filter = _no_filter
+
+    source = _sanitize_for_substitute(source)
+    destination = _sanitize_for_substitute(destination)
 
     common_files = 0
     for current_dir, _, _ in os.walk(source):
@@ -80,6 +92,11 @@ def is_filetree_a_subset_of(source, destination, file_filter=None):
     '''
     if file_filter is None:
         file_filter = _no_filter
+
+    source = _sanitize_for_substitute(source)
+    destination = _sanitize_for_substitute(destination)
+
+    assert os.path.exists(source)
 
     for current_source_dir, _, _ in os.walk(source):
 
@@ -150,9 +167,15 @@ def delete_existing(source, destinations, file_filter=None):
         raise RuntimeError('None of the given destinations was valid. '
                            'Do not delete any files.')
 
+    source = _sanitize_for_substitute(source)
+    destinations = [_sanitize_for_substitute(dest) for dest in destinations]
+
+    assert os.path.exists(source)
+
     def _exists_in_all_destinations(path):
         '''
         '''
+        path = _sanitize_for_substitute(path)
         try:
             return all((filecmp.cmp(path, re.sub(source, dest, path))
                         for dest in destinations))

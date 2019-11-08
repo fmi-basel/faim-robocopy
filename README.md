@@ -39,8 +39,25 @@ cd faim-robocopy
 conda install --yes --file requirements.txt
 ```
 
-Finally, we recommend creating a shortcut to ```FAIM-robocopy.pyw```,
-where you select the python executable from the ```faim-robocopy```
-conda environment under ```run with```. You can determine the
-corresponding location of this python executable with the command
-```where pythonw``` in the anaconda prompt.
+You can now launch the GUI from the console using:
+```
+python FAIM-robocopy.pyw
+```
+(Make sure the "faim-robocopy" environment is activated -> ```conda activate faim-robocopy```)
+
+For convenience, we recommend creating a shortcut. To do so, right-click and drag ```FAIM-robocopy.pyw``` to the desired location and choose ```Create shortcuts here```. Then, right click the shortcut and select ```Properties```. There, select the ```Shortcut``` tab and extend the field ```Target:``` as follows:
+
+```
+<CONDA_ENVIRONMENT_PATH>\pythonw.exe <CODE_PATH>\faim-robocopy\FAIM-robocopy.pyw
+```
+
+The _first_ part ```<CONDA_ENVIRONMENT_PATH>\pythonw.exe``` needs to be added, while the _second_ part```<CODE_PATH>\faim-robocopy\FAIM-robocopy.pyw``` is the path to the script which will already be there. 
+
+In order to determine the correct ```<CONDA_ENVIRONMENT_PATH>\pythonw.exe```, open an anaconda prompt (if not already open) and activate the faim-robocopy environment with ```conda activate faim-robocopy```. Then, type ```where pythonw```: It will show at least two paths. The one of which ends in ```faim-robocopy\pythonw.exe``` is the path that should be used in the shortcut.
+
+As an example, the ```Target:``` might look like:
+
+```
+C:\anaconda\envs\faim-robocopy\pythonw.exe C:\tools\faim-robocopy\FAIM-robocopy.pyw
+```
+
