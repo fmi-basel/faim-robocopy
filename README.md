@@ -45,6 +45,8 @@ python FAIM-robocopy.pyw
 ```
 (Make sure the "faim-robocopy" environment is activated -> ```conda activate faim-robocopy```)
 
+### Creating a shortcut
+
 For convenience, we recommend creating a shortcut. To do so, right-click and drag ```FAIM-robocopy.pyw``` to the desired location and choose ```Create shortcuts here```. Then, right click the shortcut and select ```Properties```. There, select the ```Shortcut``` tab and extend the field ```Target:``` as follows:
 
 ```
@@ -61,3 +63,10 @@ As an example, the ```Target:``` might look like:
 C:\anaconda\envs\faim-robocopy\pythonw.exe C:\tools\faim-robocopy\FAIM-robocopy.pyw
 ```
 
+If you are on a more recent version of Windows 10, then you will most likely have to use the following ```Target``` in the shortcut:
+
+```
+%windir%\System32\cmd.exe "/K" C:\anaconda52\x64\Scripts\activate.bat C:\anaconda52\x64\envs\faim-robocopy & pythonw.exe <CODE_PATH>\faim-robocopy\FAIM-robocopy.pyw
+```
+
+where you will have to replace ```C:\anaconda52\x64``` with the path where you installed anaconda.
