@@ -92,7 +92,6 @@ class RobocopyTask:
     Provides a terminate functionality to abort running threads preliminarily.
 
     '''
-
     def __init__(self, notifier, additional_flags=None):
         '''
         '''
@@ -270,7 +269,9 @@ class RobocopyTask:
                         break
 
         # Report files in both folders.
-        logger.info('Robocopy summary:')
+        logger.info('Collecting summary of previous robocopy run... '
+                    '(this may take up to a few minutes if there are '
+                    'a thousands of files in source/destination)')
         _report(source, destinations, file_filter, n_deleted)
 
         # Notify user about success.
@@ -351,7 +352,6 @@ class RobocopyError(Exception):
     '''Robocopy exception for return codes >= 8.
 
     '''
-
     def __init__(self, returncode, error_info):
         '''
         '''
