@@ -62,6 +62,11 @@ def _report(source, destinations, file_filter, n_deleted):
     '''
     logger = logging.getLogger(__name__)
 
+    # collect statistics on files/folders
+    FolderStat = namedtuple('folder_stat',
+                            ['folder', 'filecount', 'identical'])
+    stats = []
+
     for folder in [
             source,
     ] + destinations:
@@ -74,17 +79,25 @@ def _report(source, destinations, file_filter, n_deleted):
 
             if folder != source:
                 identical = count_identical_files(source, folder, file_filter)
-                logger.info('%d files (total) in %s, %d identical to source',
-                            filecount, folder, identical)
             else:
-                logger.info('%d files (total) in %s', filecount, folder)
-                if n_deleted > 0:
-                    logger.info('%d files were deleted from %s', n_deleted,
-                                folder)
+                identical = None
+
+            stats.append(FolderStat(folder, filecount, identical))
 
         except Exception as err:
             logger.error('Could not count files in %s. Error: %s', folder,
                          str(err))
+
+    # write stats to log.
+    for stat in stats:
+        if stat.identical is not None:
+            logger.info('%d files (total) in %s, %d identical to source',
+                        stat.filecount, stat.folder, stat.identical)
+        else:
+            logger.info('%d files (total) in %s', stat.filecount, stat.folder)
+            if n_deleted > 0:
+                logger.info('%d files were deleted from %s', n_deleted,
+                            stat.folder)
 
 
 class RobocopyTask:
@@ -92,6 +105,7 @@ class RobocopyTask:
     Provides a terminate functionality to abort running threads preliminarily.
 
     '''
+
     def __init__(self, notifier, additional_flags=None):
         '''
         '''
@@ -269,10 +283,11 @@ class RobocopyTask:
                         break
 
         # Report files in both folders.
-        logger.info('Collecting summary of previous robocopy run... '
+        logger.warn('Collecting summary of previous robocopy run... '
                     '(this may take up to a few minutes if there are '
                     'a thousands of files in source/destination)')
         _report(source, destinations, file_filter, n_deleted)
+        logger.info('Summary done.')
 
         # Notify user about success.
         self.notifier.finished(source, destinations)
@@ -352,6 +367,7 @@ class RobocopyError(Exception):
     '''Robocopy exception for return codes >= 8.
 
     '''
+
     def __init__(self, returncode, error_info):
         '''
         '''

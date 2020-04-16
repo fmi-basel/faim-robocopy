@@ -215,7 +215,7 @@ class RobocopyGUI(Frame):
             'Robocopy aborted by user. Please wait ...')
         self._stop_running_threads()
         self._stop_robocopy_processes()
-        logging.getLogger(__name__).info('... done')
+        logging.getLogger(__name__).info('... abort done.')
 
     def quit(self, *args):
         '''exit gui and clean-up running robocopy processes.
