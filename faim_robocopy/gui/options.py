@@ -51,6 +51,7 @@ class OptionsSelectionUi(LabelFrame):
             anchor=TK_W_ANCHOR)
         self.delete_src_button.pack(pady=(0, PAD), **pack_params)
 
+        # Exclude patterns
         self.omit_files_label = Label(
             self,
             text="Omit files matching the following patterns:",
@@ -61,11 +62,27 @@ class OptionsSelectionUi(LabelFrame):
             'like * to match several files. '
             'Example: *.tif; some*.hdf5; test.csv',
             wraplength=500)
-
         self.omit_files_label.pack(**pack_params)
         self.omit_files_box = Entry(
             self, width=3, textvariable=self.shared.omit_files_var)
         self.omit_files_box.pack(pady=(0, PAD), **pack_params)
+
+        # Include patterns
+        self.include_files_label = Label(
+            self,
+            text="Include *only* files matching the following patterns:",
+            anchor=TK_W_ANCHOR)
+        ToolTip(
+            self.include_files_label,
+            'Separate multiple patterns with semicolons and use wildcards '
+            'like * to match several files. \n'
+            'Example: *s10_*; *s11_*; *s37_* \n'
+            'Leave this field empty if you want to copy all files in the '
+            'source folder.', wraplength=500)
+        self.include_files_label.pack(**pack_params)
+        self.include_files_box = Entry(
+            self, width=3, textvariable=self.shared.include_only_files_var)
+        self.include_files_box.pack(pady=(0, PAD), **pack_params)
 
         # Time-lapse information
         self.time_interval_label = Label(

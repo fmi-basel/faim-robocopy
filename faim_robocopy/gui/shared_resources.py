@@ -29,6 +29,9 @@ class SharedResources:
         self.omit_files_var = StringVar()
         self.omit_files_var.set('')
 
+        self.include_only_files_var = StringVar()
+        self.include_only_files_var.set('')
+
         self.time_interval_var = DoubleVar()
         self.time_interval_var.set(0.5)
 
@@ -73,4 +76,5 @@ class SharedResources:
             wait_exit=self.time_exit_var.get(),
             delete_source=self.delete_src_var.get(),
             exclude_files=self.omit_files_var.get(),
+            include_files=self.include_only_files_var.get()
         )
