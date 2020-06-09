@@ -1,7 +1,5 @@
 import os
 
-import pytest
-
 from faim_robocopy.utils import delete_existing
 from faim_robocopy.utils import delete_files_older_than
 
