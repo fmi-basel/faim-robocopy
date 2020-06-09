@@ -2,7 +2,7 @@ import pytest
 
 from faim_robocopy.utils import is_filetree_a_subset_of
 from faim_robocopy.utils import count_identical_files
-from faim_robocopy.utils import create_file_filter
+from faim_robocopy.file_filter import create_file_filter
 
 
 def test_no_filter():
