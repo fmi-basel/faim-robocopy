@@ -48,7 +48,7 @@ def _sanitize_patterns(patterns, delimiter=';'):
         patterns = patterns.split(delimiter)
 
     patterns = [
-        pat for pat in (pat.strip(' ') for pat in patterns) if pat is not ''
+        pat for pat in (pat.strip(' ') for pat in patterns) if pat != ''
     ]
 
     logging.getLogger(__name__).debug(
