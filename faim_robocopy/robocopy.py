@@ -52,7 +52,7 @@ def _sanitize_patterns(patterns, delimiter=';'):
     ]
 
     logging.getLogger(__name__).debug(
-        'Ignoring all files that match any of the following patterns: %s',
+        'Sanitized the following patterns: %s',
         patterns)
     return patterns
 
