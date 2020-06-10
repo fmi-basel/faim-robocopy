@@ -12,7 +12,7 @@ from faim_robocopy.utils import is_filetree_a_subset_of
 from faim_robocopy.utils import delete_existing
 from faim_robocopy.utils import count_files_in_subtree
 from faim_robocopy.utils import count_identical_files
-from faim_robocopy.utils import create_file_filter
+from faim_robocopy.file_filter import create_file_filter
 
 
 def _sanitize_destinations(destinations):
@@ -36,23 +36,25 @@ def _sanitize_destinations(destinations):
     ]
 
 
-def _sanitize_ignore_patterns(ignore_patterns, delimiter=';'):
-    '''turns a string of ignore patterns into a list of patterns.
+def _sanitize_patterns(patterns, delimiter=';'):
+    '''turns a string of exclude/include patterns into a list of patterns.
 
     Notes
     -----
     Leading or trailing whitespace is removed.
 
     '''
-    if isinstance(ignore_patterns, str):
-        ignore_patterns = ignore_patterns.split(delimiter)
+    if isinstance(patterns, str):
+        patterns = patterns.split(delimiter)
 
-    ignore_patterns = [pat.strip(' ') for pat in ignore_patterns]
+    patterns = [
+        pat for pat in (pat.strip(' ') for pat in patterns) if pat is not ''
+    ]
+
     logging.getLogger(__name__).debug(
-        'Ignoring all files that match any of the following patterns: %s',
-        ignore_patterns)
-
-    return ignore_patterns
+        'Sanitized the following patterns: %s',
+        patterns)
+    return patterns
 
 
 def _report(source, destinations, file_filter, n_deleted):
@@ -105,7 +107,6 @@ class RobocopyTask:
     Provides a terminate functionality to abort running threads preliminarily.
 
     '''
-
     def __init__(self, notifier, additional_flags=None):
         '''
         '''
@@ -168,7 +169,7 @@ class RobocopyTask:
             return self._run(*args, **kwargs)
 
     def _run(self, source, destinations, multithread, time_interval, wait_exit,
-             delete_source, exclude_files, **robocopy_kwargs):
+             delete_source, exclude_files, include_files, **robocopy_kwargs):
         '''actual robocopy task function. Call the public method to ensure that the
         is_running() state is properly set on entering and exiting.
 
@@ -180,8 +181,10 @@ class RobocopyTask:
         destinations = _sanitize_destinations(destinations)
 
         # sanitize ignore_patterns and turn them into a filter.
-        exclude_files = _sanitize_ignore_patterns(exclude_files)
-        file_filter = create_file_filter(exclude_files)
+        exclude_files = _sanitize_patterns(exclude_files)
+        include_files = _sanitize_patterns(include_files)
+        file_filter = create_file_filter(ignore_patterns=exclude_files,
+                                         include_patterns=include_files)
 
         if not destinations:
             raise RuntimeError('Need at least one destination to copy to.')
@@ -224,6 +227,7 @@ class RobocopyTask:
                                         source=source,
                                         dest=destination,
                                         exclude_files=exclude_files,
+                                        include_files=include_files,
                                         additional_flags=self.additional_flags,
                                         **robocopy_kwargs)
             future.add_done_callback(_robocopy_callback)
@@ -293,7 +297,8 @@ class RobocopyTask:
         self.notifier.finished(source, destinations)
 
 
-def build_robocopy_command(source, dest, exclude_files, additional_flags):
+def build_robocopy_command(source, dest, exclude_files, include_files,
+                           additional_flags):
     '''builds the robocopy call command.
 
     '''
@@ -305,10 +310,26 @@ def build_robocopy_command(source, dest, exclude_files, additional_flags):
     # https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/robocopy
     cmd = ['robocopy', source, dest, "/e", "/COPY:DT"]
 
-    if exclude_files is not None and not exclude_files == '':
+    def _is_empty(args):
+        if args is None:
+            return True
+        if not args:
+            return True
+        if args == '':
+            return True
+        if all(val == '' for val in args):
+            return True
+        return False
+
+    if not _is_empty(exclude_files):
         cmd.extend([
             '/XF',
         ] + exclude_files)
+
+    if not _is_empty(include_files):
+        cmd.extend([
+            '/IF',
+        ] + include_files)
 
     # previously known as "secure mode"
     cmd.extend(["/r:1", "/w:30", "/dcopy:T", "/Z"])
@@ -317,13 +338,17 @@ def build_robocopy_command(source, dest, exclude_files, additional_flags):
     cmd.extend(['/V', '/njh', '/njs'])
 
     # additional flags.
-    if additional_flags is not None:
+    if not _is_empty(additional_flags):
         cmd.extend(additional_flags)
 
     return cmd
 
 
-def robocopy_call(source, dest, exclude_files=None, additional_flags=None):
+def robocopy_call(source,
+                  dest,
+                  exclude_files=None,
+                  include_files=None,
+                  additional_flags=None):
     '''run an individual robocopy call.
 
     Parameters
@@ -342,7 +367,11 @@ def robocopy_call(source, dest, exclude_files=None, additional_flags=None):
     An error is raised if Robocopy returns with an exit code >= 8.
 
     '''
-    cmd = build_robocopy_command(source, dest, exclude_files, additional_flags)
+    cmd = build_robocopy_command(source,
+                                 dest,
+                                 exclude_files=exclude_files,
+                                 include_files=include_files,
+                                 additional_flags=additional_flags)
 
     call_kwargs = dict(shell=True)
 
@@ -367,7 +396,6 @@ class RobocopyError(Exception):
     '''Robocopy exception for return codes >= 8.
 
     '''
-
     def __init__(self, returncode, error_info):
         '''
         '''

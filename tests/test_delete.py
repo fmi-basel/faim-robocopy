@@ -1,9 +1,8 @@
 import os
 
-import pytest
-
 from faim_robocopy.utils import delete_existing
 from faim_robocopy.utils import delete_files_older_than
+from faim_robocopy.file_filter import create_file_filter
 
 
 def test_delete_duplicates(tmpdir):
@@ -27,11 +26,13 @@ def test_delete_duplicates(tmpdir):
         dest2: ['b.ini', 'thing.txt']
     }
 
+    # create files
     for folder in files_in.keys():
         for filename in files_in[folder]:
             filehandle = folder.join(filename)
             filehandle.write(filename)
 
+    # do the work
     delete_existing(source, [dest1, dest2])
 
     # check that all files exists.
@@ -64,17 +65,7 @@ def test_delete_duplicates_diff(tmpdir):
     dest1 = tmpdir.mkdir('dest_dir_1')
     dest2 = tmpdir.mkdir('some_other_dir').mkdir('dest_dir_2')
 
-    files_in = {
-        source: [
-            'a.txt',
-        ],
-        dest1: [
-            'a.txt',
-        ],
-        dest2: [
-            'a.txt',
-        ]
-    }
+    files_in = {folder: ['a.txt'] for folder in (source, dest1, dest2)}
 
     # create files.
     for (folder, filename) in ((folder, filename)
@@ -98,6 +89,61 @@ def test_delete_duplicates_diff(tmpdir):
 
     for filename in files_in[source]:
         assert os.path.exists(os.path.join(source, filename))
+
+
+def test_delete_duplicates_with_ignore_filter(tmpdir):
+    '''test deleting of copied files.
+
+    '''
+    # setup
+    source = tmpdir.mkdir('source_dir')
+    dest1 = tmpdir.mkdir('dest_dir_1')
+    dest2 = tmpdir.mkdir('some_other_dir').mkdir('dest_dir_2')
+
+    # Add some empty folders
+    empties = [source.mkdir('non').mkdir('sense'), source.mkdir('is_empty')]
+    empties_not_for_deletion = [
+        dest1.mkdir('nonsense'),
+    ]
+
+    files_in = {
+        source: ['a.txt', 'b.ini', 'some.txt', 'thing.txt'],
+        dest1: ['a.txt', 'b.ini', 'some.txt', 'thing.txt'],
+        dest2: ['a.txt', 'b.ini', 'thing.txt']
+    }
+
+    for folder in files_in.keys():
+        for filename in files_in[folder]:
+            filehandle = folder.join(filename)
+            filehandle.write(filename)
+
+    # The only deleted file should be: a.txt.
+    # b.ini matches with the ignore_patterns and thing.txt does not
+    # match with any include_patterns. Therefore, neither one of these
+    # two should be removed.
+    file_filter = create_file_filter(ignore_patterns=['*.ini'],
+                                     include_patterns=['a.*'])
+    delete_existing(source, [dest1, dest2], file_filter=file_filter)
+
+    # check that all files exist in destinations.
+    for folder in [dest1, dest2]:
+        for filename in files_in[folder]:
+            assert os.path.exists(os.path.join(folder, filename))
+
+    for filename in files_in[source]:
+        if filename == 'a.txt':  # this should have been deleted!
+            continue
+        assert os.path.exists(os.path.join(source, filename))
+
+    # check that copied file is removed from source.
+    assert not os.path.exists(os.path.join(source, 'a.txt'))
+
+    # check if empty folders are treated correctly.
+    for empty_dir in empties:
+        assert os.path.exists(empty_dir)
+
+    for empty_dir in empties_not_for_deletion:
+        assert os.path.exists(empty_dir)
 
 
 def test_delete_older_than(tmpdir):

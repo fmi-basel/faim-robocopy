@@ -181,7 +181,9 @@ class SettingsUi(Toplevel):
                                 'custom_flags')].get().split(' ')
         flags = [x for x in flags if x != '']
         self._command.set(
-            build_robocopy_command('SOURCE', 'DEST', ['EXCL'], flags))
+            build_robocopy_command('SOURCE', 'DEST', exclude_files=['EXCL'],
+                                   include_files=['INCL'],
+                                   additional_flags=flags))
 
     def _add_str_setting(self, parent, setting_item, value):
         '''

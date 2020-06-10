@@ -5,24 +5,21 @@ import re
 import getpass
 import logging
 import filecmp
-import functools
 import time
 
 from glob import glob
-from fnmatch import fnmatch
+
+from .file_filter import NoFilter
 
 # Root directory of project.
 # E.g. used for updating via gitpython.
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def count_files_in_subtree(folder, file_filter=None):
+def count_files_in_subtree(folder, file_filter=NoFilter):
     '''count total number of files in folder and all subfolders.
 
     '''
-    if file_filter is None:
-        file_filter = _no_filter
-
     return sum([len(file_filter(files)) for _, _, files in os.walk(folder)])
 
 
@@ -35,13 +32,10 @@ def _sanitize_for_substitute(path):
     return str(path).replace('\\', '/')
 
 
-def count_identical_files(source, destination, file_filter=None):
+def count_identical_files(source, destination, file_filter=NoFilter):
     '''counts identical files in two file trees.
 
     '''
-    if file_filter is None:
-        file_filter = _no_filter
-
     source = _sanitize_for_substitute(source)
     destination = _sanitize_for_substitute(destination)
 
@@ -85,14 +79,11 @@ def delete_files_older_than(folder, pattern, n_days):
     logger.debug('Removed %d files', counter)
 
 
-def is_filetree_a_subset_of(source, destination, file_filter=None):
+def is_filetree_a_subset_of(source, destination, file_filter=NoFilter):
     '''checks if destination contains a full copy of the filetree
     in source.
 
     '''
-    if file_filter is None:
-        file_filter = _no_filter
-
     source = _sanitize_for_substitute(source)
     destination = _sanitize_for_substitute(destination)
 
@@ -143,7 +134,7 @@ def _filter_dest(source, destinations):
     return filtered_dest
 
 
-def delete_existing(source, destinations, file_filter=None):
+def delete_existing(source, destinations, file_filter=NoFilter):
     '''delete all files that were copied to all destinations.
 
     Parameters
@@ -156,9 +147,6 @@ def delete_existing(source, destinations, file_filter=None):
     '''
     logger = logging.getLogger(__name__)
     logger.info('Checking for fully copied source files for deletion...')
-
-    if file_filter is None:
-        file_filter = _no_filter
 
     # Sanitize destinations and make sure there is at least one.
     destinations = _filter_dest(source, destinations)
@@ -224,57 +212,6 @@ def delete_existing(source, destinations, file_filter=None):
     return n_deleted
 
 
-def create_file_filter(ignore_patterns):
-    '''creates a file filter that removes files that match any
-    of the given patterns.
-
-    '''
-    if ignore_patterns is not None or ignore_patterns == '':
-
-        if isinstance(ignore_patterns, str):
-            ignore_patterns = [
-                ignore_patterns,
-            ]
-
-        return functools.partial(ignore_filter,
-                                 ignore_patterns=ignore_patterns)
-
-    logging.getLogger(__name__).debug(
-        'Cannot create filter for the given patterns: %s', ignore_patterns)
-
-    def _no_filter(file_list):
-        return file_list
-
-    return _no_filter
-
-
-def ignore_filter(file_list, ignore_patterns):
-    '''remove all files that match any of the given patterns.
-
-    Parameters
-    ----------
-    file_list : list of paths
-        list of paths to be filtered.
-    ignore_patterns : list of str
-        patterns matching files that are to be ignored. This supports
-        all expressions that can be matched with ```fnmatch```.
-
-    Returns
-    -------
-    filtered_files : list of paths
-        filtered file list.
-
-    '''
-    return [
-        item for item in file_list
-        if not any(fnmatch(item, pat) for pat in ignore_patterns)
-    ]
-
-
-def _no_filter(file_list):
-    '''
-    '''
-    return file_list
 
 
 def get_display_name():

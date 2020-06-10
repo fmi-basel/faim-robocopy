@@ -1,8 +1,6 @@
-import pytest
-
 from faim_robocopy.utils import is_filetree_a_subset_of
 from faim_robocopy.utils import count_identical_files
-from faim_robocopy.utils import create_file_filter
+from faim_robocopy.file_filter import create_file_filter, NoFilter
 
 
 def test_no_filter():
@@ -16,6 +14,7 @@ def test_no_filter():
     assert files == create_file_filter('txt')(files)
     assert files == create_file_filter('?')(files)
     assert files == create_file_filter('.csv')(files)
+    assert files == NoFilter(files)
 
 
 def test_ignore_patterns():
@@ -29,6 +28,30 @@ def test_ignore_patterns():
         files[0],
     ] + files[2:] == create_file_filter('*.csv')(files)
     assert files[-2:] == create_file_filter(['*.txt', '*thing*'])(files)
+
+
+def test_include_patterns():
+    '''
+    '''
+    files = ['a.txt', 'some/thing/b.csv', 'win\\dows\\file', 'some/txt/file']
+
+    assert files[:1] == create_file_filter(include_patterns='*.txt')(files)
+    assert files[:1] == create_file_filter(include_patterns=['*.txt'])(files)
+    assert files[:2] == create_file_filter(
+        include_patterns=['*.txt', '*.csv'])(files)
+    assert files[-2:] == create_file_filter(include_patterns=['*file'])(files)
+    assert files[1:2] == create_file_filter(include_patterns=['*b.*'])(files)
+
+
+def test_both_patterns():
+    '''test file filter with both ignore and involve patterns.
+    '''
+    files = ['a.txt', 'some/thing/b.csv', 'win\\dows\\file', 'some/txt/file']
+
+    assert [files[0],
+            files[-1]] == create_file_filter(
+                ignore_patterns=['win*'],
+                include_patterns=['*file', 'a.*'])(files)
 
 
 def test_compare(tmpdir):
