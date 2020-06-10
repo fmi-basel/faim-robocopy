@@ -75,7 +75,7 @@ class OptionsSelectionUi(LabelFrame):
         ToolTip(
             self.include_files_label,
             'Separate multiple patterns with semicolons and use wildcards '
-            'like * to match several files. \n'
+            'like * to match several files. '
             'Example: *s10_*; *s11_*; *s37_* \n'
             'Leave this field empty if you want to copy all files in the '
             'source folder.', wraplength=500)
