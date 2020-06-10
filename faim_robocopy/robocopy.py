@@ -310,12 +310,23 @@ def build_robocopy_command(source, dest, exclude_files, include_files,
     # https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/robocopy
     cmd = ['robocopy', source, dest, "/e", "/COPY:DT"]
 
-    if exclude_files is not None and not exclude_files == '':
+    def _is_empty(args):
+        if args is None:
+            return True
+        if not args:
+            return True
+        if args == '':
+            return True
+        if all(val == '' for val in args):
+            return True
+        return False
+
+    if not _is_empty(exclude_files):
         cmd.extend([
             '/XF',
         ] + exclude_files)
 
-    if include_files is not None and not include_files == '':
+    if not _is_empty(include_files):
         cmd.extend([
             '/IF',
         ] + include_files)
@@ -327,7 +338,7 @@ def build_robocopy_command(source, dest, exclude_files, include_files,
     cmd.extend(['/V', '/njh', '/njs'])
 
     # additional flags.
-    if additional_flags is not None:
+    if not _is_empty(additional_flags):
         cmd.extend(additional_flags)
 
     return cmd
