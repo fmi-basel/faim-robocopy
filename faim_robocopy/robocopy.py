@@ -227,6 +227,7 @@ class RobocopyTask:
                                         source=source,
                                         dest=destination,
                                         exclude_files=exclude_files,
+                                        include_files=include_files,
                                         additional_flags=self.additional_flags,
                                         **robocopy_kwargs)
             future.add_done_callback(_robocopy_callback)
