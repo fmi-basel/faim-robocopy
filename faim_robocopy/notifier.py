@@ -1,4 +1,5 @@
 import abc
+from threading import Lock
 
 from .mail import send_mail
 from .utils import get_hostname
@@ -8,7 +9,6 @@ class BaseNotifier(metaclass=abc.ABCMeta):
     '''Abstract notifier class.
 
     '''
-
     @abc.abstractmethod
     def failed(self):
         '''notify failure.
@@ -28,28 +28,29 @@ class MailNotifier(BaseNotifier):
     In case of an error, the user is informed exactly once.
 
     '''
-
     def __init__(self, user_mail, logfile, smtphost, sender_address):
         '''
         '''
         self.user_mail = user_mail
+        self._lock = Lock()
         self.fail_count = 0
         self.logfile = logfile
-        self.smtp_kwargs = dict(
-            smtphost=smtphost, sender_address=sender_address)
+        self.smtp_kwargs = dict(smtphost=smtphost,
+                                sender_address=sender_address)
 
     def failed(self, error):
         '''
         '''
-        if self.fail_count <= 0:
-            send_mail(
-                self.user_mail, 'Robocopy Info: ERROR',
-                str(error) + '\n\n'
-                'Please check the logfile in {} for further information.\n'
-                'Note that further errors will not be reported by mail.'.
-                format(self.logfile), **self.smtp_kwargs)
+        with self._lock:
+            if self.fail_count <= 0:
+                send_mail(
+                    self.user_mail, 'Robocopy Info: ERROR',
+                    str(error) + '\n\n'
+                    'Please check the logfile in {} for further information.\n'
+                    'Note that further errors will not be reported by mail.'.
+                    format(self.logfile), **self.smtp_kwargs)
 
-        self.fail_count += 1
+            self.fail_count += 1
 
     def finished(self, source, destinations):
         '''
