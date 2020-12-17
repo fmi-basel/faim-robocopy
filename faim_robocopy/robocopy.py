@@ -51,9 +51,8 @@ def _sanitize_patterns(patterns, delimiter=';'):
         pat for pat in (pat.strip(' ') for pat in patterns) if pat != ''
     ]
 
-    logging.getLogger(__name__).debug(
-        'Sanitized the following patterns: %s',
-        patterns)
+    logging.getLogger(__name__).debug('Sanitized the following patterns: %s',
+                                      patterns)
     return patterns
 
 
@@ -200,9 +199,9 @@ class RobocopyTask:
 
         def _robocopy_callback(future):
             '''handles the logging of robocopy jobs and sends a mail in case of
-                failure.
+            failure.
 
-                '''
+            '''
             if future.cancelled():
                 logger.debug('Robocopy job cancelled')
             elif future.done():
@@ -245,9 +244,31 @@ class RobocopyTask:
             # whenever a source and destination have different content.
             while self.is_running():
 
-                # prevent an early stop when the robocopy job is running long.
-                if any(future.running() for future in self.futures.values()):
-                    self._update_changed()
+                for dest in destinations:
+                    # prevent an early stop when the robocopy job is running long.
+                    if self.futures[dest].running():
+                        self._update_changed()
+                        logger.info('Robocopy jobs running...')
+
+                    # For all those futures that are finished, we check if
+                    # there are new files.
+                    elif self.futures[dest].done():
+                        if not is_filetree_a_subset_of(source, dest,
+                                                       file_filter):
+                            self._update_changed()
+                            self.futures[dest] = _submit(dest)
+                            logger.info(
+                                'Found new files in source. Starting a new robocopy job...'
+                            )
+                        else:
+                            logger.info(
+                                'Waiting for %1.1f min before checking for new files to copy',
+                                float(time_interval))
+
+                # delete files that are copied to all destinations.
+                if delete_source:
+                    n_deleted += delete_existing(source, destinations,
+                                                 file_filter)
 
                 # Terminate if wait_exit is expired without any new
                 # file to copy.
@@ -255,29 +276,6 @@ class RobocopyTask:
                     logger.info('Stopping robocopy after %1.1f min of waiting',
                                 wait_exit)
                     break
-
-                # For all those futures that are finished, we check if
-                # there are new files.
-                for dest in destinations:
-
-                    if not is_filetree_a_subset_of(source, dest, file_filter):
-                        self._update_changed()
-
-                        if self.futures[dest].done():
-                            self.futures[dest] = _submit(dest)
-
-                # delete files that are copied to all destinations.
-                if delete_source:
-                    n_deleted += delete_existing(source, destinations,
-                                                 file_filter)
-
-                # wait
-                if any(future.running() for future in self.futures.values()):
-                    logger.info('Robocopy jobs running...')
-                else:
-                    logger.info(
-                        'Waiting for %1.1f min before checking for new files to copy',
-                        float(time_interval))
 
                 # Sleep with polling for a potential terminate() signal
                 for _ in range(
