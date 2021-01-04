@@ -4,9 +4,12 @@ import os
 import datetime
 import time
 import re
+import psutil
 
+from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor
 from collections import namedtuple
+from threading import Lock
 
 from faim_robocopy.utils import is_filetree_a_subset_of
 from faim_robocopy.utils import delete_existing
@@ -51,9 +54,8 @@ def _sanitize_patterns(patterns, delimiter=';'):
         pat for pat in (pat.strip(' ') for pat in patterns) if pat != ''
     ]
 
-    logging.getLogger(__name__).debug(
-        'Sanitized the following patterns: %s',
-        patterns)
+    logging.getLogger(__name__).debug('Sanitized the following patterns: %s',
+                                      patterns)
     return patterns
 
 
@@ -102,6 +104,97 @@ def _report(source, destinations, file_filter, n_deleted):
                             stat.folder)
 
 
+class SubprocessLauncher:
+    def __init__(self):
+        self._registered_processes = []
+        self._lock = Lock()
+
+    def _register(self, process):
+        with self._lock:
+            self._registered_processes.append(process.pid)
+
+    def _deregister(self, process):
+        with self._lock:
+            self._registered_processes.remove(process.pid)
+
+    @contextmanager
+    def track(self, process):
+        self._register(process)
+        try:
+            yield
+        finally:
+            self._deregister(process)
+
+    def check_output(self, *popenargs, timeout=None, **kwargs):
+        if 'stdout' in kwargs:
+            raise ValueError(
+                'stdout argument not allowed, it will be overridden.')
+
+        if 'input' in kwargs and kwargs['input'] is None:
+            # Explicitly passing input=None was previously equivalent to passing an
+            # empty string. That is maintained here for backwards compatibility.
+            kwargs['input'] = '' if kwargs.get('universal_newlines',
+                                               False) else b''
+        return self.run(*popenargs,
+                        stdout=subprocess.PIPE,
+                        timeout=timeout,
+                        check=True,
+                        **kwargs).stdout
+
+    def run(self,
+            *popenargs,
+            input=None,
+            capture_output=False,
+            timeout=None,
+            check=False,
+            **kwargs):
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError(
+                    'stdin and input arguments may not both be used.')
+            kwargs['stdin'] = subprocess.PIPE
+
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get(
+                    'stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = subprocess.PIPE
+            kwargs['stderr'] = subprocess.PIPE
+
+        with subprocess.Popen(*popenargs, **kwargs) as process:
+            with self.track(process):
+                try:
+                    stdout, stderr = process.communicate(input,
+                                                         timeout=timeout)
+                except TimeoutExpired as exc:
+                    process.kill()
+                    exc.stdout, exc.stderr = process.communicate()
+                    raise
+                except:  # Including KeyboardInterrupt, communicate handled that.
+                    process.kill()
+                    # We don't call process.wait() as .__exit__ does that for us.
+                    raise
+                retcode = process.poll()
+                if check and retcode:
+                    raise subprocess.CalledProcessError(retcode,
+                                                        process.args,
+                                                        output=stdout,
+                                                        stderr=stderr)
+
+            return subprocess.CompletedProcess(process.args, retcode, stdout,
+                                               stderr)
+
+    def terminate(self):
+        with self._lock:
+            for pid in self._registered_processes:
+                try:
+                    psutil.Process(pid).terminate()
+                except Exception as err:
+                    logging.getLogger(__name__).error(
+                        'Could not terminate process with pid: %s', err)
+
+
 class RobocopyTask:
     '''Watches a source folder and launches robocopy calls for new data.
     Provides a terminate functionality to abort running threads preliminarily.
@@ -116,19 +209,27 @@ class RobocopyTask:
         self._time_at_last_change = datetime.datetime.now()
         self.notifier = notifier
         self.additional_flags = additional_flags
+        self.subprocess_launcher = SubprocessLauncher()
 
     def terminate(self):
         '''requests the task to terminate.
 
         '''
-        if self.is_running():
-            logging.getLogger(__name__).warning('Stopping robocopy task')
+        if not self.is_running():
+            logging.getLogger(__name__).warning(
+                'RobocopyTask is already stopped or in the process of stopping.'
+            )
+            return
+
+        logging.getLogger(__name__).warning('Stopping robocopy task')
+        self._running = False
 
         # prevent queued jobs from starting after terminate was called.
         for future in self.futures.values():
             future.cancel()
 
-        self._running = False
+        # kill any running robocopy processes.
+        self.subprocess_launcher.terminate()
 
     def _update_changed(self):
         '''
@@ -200,9 +301,9 @@ class RobocopyTask:
 
         def _robocopy_callback(future):
             '''handles the logging of robocopy jobs and sends a mail in case of
-                failure.
+            failure.
 
-                '''
+            '''
             if future.cancelled():
                 logger.debug('Robocopy job cancelled')
             elif future.done():
@@ -223,7 +324,7 @@ class RobocopyTask:
 
             '''
             # NOTE thread_pool is resolved at call time.
-            future = thread_pool.submit(robocopy_call,
+            future = thread_pool.submit(self.robocopy_call,
                                         source=source,
                                         dest=destination,
                                         exclude_files=exclude_files,
@@ -245,9 +346,31 @@ class RobocopyTask:
             # whenever a source and destination have different content.
             while self.is_running():
 
-                # prevent an early stop when the robocopy job is running long.
-                if any(future.running() for future in self.futures.values()):
-                    self._update_changed()
+                for dest in destinations:
+                    # prevent an early stop when the robocopy job is running long.
+                    if self.futures[dest].running():
+                        self._update_changed()
+                        logger.info('Robocopy jobs running...')
+
+                    # For all those futures that are finished, we check if
+                    # there are new files.
+                    elif self.futures[dest].done():
+                        if not is_filetree_a_subset_of(source, dest,
+                                                       file_filter):
+                            self._update_changed()
+                            self.futures[dest] = _submit(dest)
+                            logger.info(
+                                'Found new files in source. Starting a new robocopy job...'
+                            )
+                        else:
+                            logger.info(
+                                'Waiting for %1.1f min before checking for new files to copy',
+                                float(time_interval))
+
+                # delete files that are copied to all destinations.
+                if delete_source:
+                    n_deleted += delete_existing(source, destinations,
+                                                 file_filter)
 
                 # Terminate if wait_exit is expired without any new
                 # file to copy.
@@ -255,29 +378,6 @@ class RobocopyTask:
                     logger.info('Stopping robocopy after %1.1f min of waiting',
                                 wait_exit)
                     break
-
-                # For all those futures that are finished, we check if
-                # there are new files.
-                for dest in destinations:
-
-                    if not is_filetree_a_subset_of(source, dest, file_filter):
-                        self._update_changed()
-
-                        if self.futures[dest].done():
-                            self.futures[dest] = _submit(dest)
-
-                # delete files that are copied to all destinations.
-                if delete_source:
-                    n_deleted += delete_existing(source, destinations,
-                                                 file_filter)
-
-                # wait
-                if any(future.running() for future in self.futures.values()):
-                    logger.info('Robocopy jobs running...')
-                else:
-                    logger.info(
-                        'Waiting for %1.1f min before checking for new files to copy',
-                        float(time_interval))
 
                 # Sleep with polling for a potential terminate() signal
                 for _ in range(
@@ -295,6 +395,54 @@ class RobocopyTask:
 
         # Notify user about success.
         self.notifier.finished(source, destinations)
+
+    def robocopy_call(self,
+                      source,
+                      dest,
+                      exclude_files=None,
+                      include_files=None,
+                      additional_flags=None):
+        '''run an individual robocopy call.
+
+        Parameters
+        ----------
+        source : path
+            source folder.
+        dest : path
+            destination folder.
+        exclude_files : list of strings
+            files or file patterns to be ignored.
+        additional_flags : list of strings
+            additional robocopy flags to be passed "as-is". Use carefully.
+
+        Notes
+        -----
+        An error is raised if Robocopy returns with an exit code >= 8.
+
+        '''
+        cmd = build_robocopy_command(source,
+                                     dest,
+                                     exclude_files=exclude_files,
+                                     include_files=include_files,
+                                     additional_flags=additional_flags)
+
+        call_kwargs = dict(shell=False)
+
+        try:
+            logging.getLogger(__name__).debug(cmd)
+            self.subprocess_launcher.check_output(cmd, **call_kwargs)
+        except subprocess.CalledProcessError as err:
+            exit_code = err.returncode
+            logging.getLogger(__name__).debug('Robocopy nonzero exit code: %s',
+                                              exit_code)
+
+            # Return codes above 8 are errors
+            if exit_code >= 8:
+                raise RobocopyError.from_error(err) from err
+            elif 2 <= exit_code < 8:
+                logging.getLogger(__name__).debug(
+                    'Robocopy exited with code %d. This is not a failure.',
+                    exit_code)
 
 
 def build_robocopy_command(source, dest, exclude_files, include_files,
@@ -342,54 +490,6 @@ def build_robocopy_command(source, dest, exclude_files, include_files,
         cmd.extend(additional_flags)
 
     return cmd
-
-
-def robocopy_call(source,
-                  dest,
-                  exclude_files=None,
-                  include_files=None,
-                  additional_flags=None):
-    '''run an individual robocopy call.
-
-    Parameters
-    ----------
-    source : path
-        source folder.
-    dest : path
-        destination folder.
-    exclude_files : list of strings
-        files or file patterns to be ignored.
-    additional_flags : list of strings
-        additional robocopy flags to be passed "as-is". Use carefully.
-
-    Notes
-    -----
-    An error is raised if Robocopy returns with an exit code >= 8.
-
-    '''
-    cmd = build_robocopy_command(source,
-                                 dest,
-                                 exclude_files=exclude_files,
-                                 include_files=include_files,
-                                 additional_flags=additional_flags)
-
-    call_kwargs = dict(shell=True)
-
-    try:
-        logging.getLogger(__name__).debug(cmd)
-        subprocess.check_output(cmd, **call_kwargs)
-    except subprocess.CalledProcessError as err:
-        exit_code = err.returncode
-        logging.getLogger(__name__).debug('Robocopy nonzero exit code: %s',
-                                          exit_code)
-
-        # Return codes above 8 are errors
-        if exit_code >= 8:
-            raise RobocopyError.from_error(err) from err
-        elif 2 <= exit_code < 8:
-            logging.getLogger(__name__).debug(
-                'Robocopy exited with code %d. This is not a failure.',
-                exit_code)
 
 
 class RobocopyError(Exception):
