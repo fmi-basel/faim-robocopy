@@ -480,10 +480,7 @@ def build_robocopy_command(source, dest, exclude_files, include_files,
         ] + include_files)
 
     # previously known as "secure mode"
-    cmd.extend(["/r:1", "/w:30", "/dcopy:T", "/Z"])
-
-    # remove job header and summary from log, but be verbose about files.
-    cmd.extend(['/V', '/njh', '/njs'])
+    cmd.extend(["/r:1", "/w:30", "/dcopy:T"])
 
     # additional flags.
     if not _is_empty(additional_flags):
