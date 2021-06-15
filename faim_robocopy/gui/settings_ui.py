@@ -65,7 +65,7 @@ SETTING_NAMES = {
                      'float', None),
         'custom_flags':
         SettingsItem(
-            'Additional flags (experimental)', 'str',
+            'Additional flags (e.g. for logging to a file, add: /LOG+:debug.log)', 'str',
             'Additional flags to be passed to robocopy. '
             'See the official robocopy doc for more information. '
             'Flags are passed "as-is". Use carefully.')
