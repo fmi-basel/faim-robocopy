@@ -346,6 +346,11 @@ class RobocopyTask:
             # whenever a source and destination have different content.
             while self.is_running():
 
+                # delete files that are copied to all destinations.
+                if delete_source:
+                    n_deleted += delete_existing(source, destinations,
+                                                 file_filter)
+
                 for dest in destinations:
                     # prevent an early stop when the robocopy job is running long.
                     if self.futures[dest].running():
@@ -366,11 +371,6 @@ class RobocopyTask:
                             logger.info(
                                 'Waiting for %1.1f min before checking for new files to copy',
                                 float(time_interval))
-
-                # delete files that are copied to all destinations.
-                if delete_source:
-                    n_deleted += delete_existing(source, destinations,
-                                                 file_filter)
 
                 # Terminate if wait_exit is expired without any new
                 # file to copy.
