@@ -33,10 +33,10 @@ class SharedResources:
         self.include_only_files_var.set('')
 
         self.time_interval_var = DoubleVar()
-        self.time_interval_var.set(0.5)
+        self.time_interval_var.set(10)
 
         self.time_exit_var = DoubleVar()
-        self.time_exit_var.set(5)
+        self.time_exit_var.set(15)
 
         self.mail_var = StringVar()
         self.mail_var.set(user_mail)
