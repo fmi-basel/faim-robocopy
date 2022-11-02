@@ -66,7 +66,7 @@ C:\anaconda\envs\faim-robocopy\pythonw.exe C:\tools\faim-robocopy\FAIM-robocopy.
 If you are on a more recent version of Windows 10, then you will most likely have to use the following ```Target``` in the shortcut:
 
 ```
-%windir%\System32\cmd.exe "/K" C:\anaconda52\x64\Scripts\activate.bat C:\anaconda52\x64\envs\faim-robocopy & pythonw.exe <CODE_PATH>\faim-robocopy\FAIM-robocopy.pyw
+conda run -n faim-robocopy pythonw <CODE_PATH>\faim-robocopy\FAIM-robocopy.pyw
 ```
 
 where you will have to replace ```C:\anaconda52\x64``` with the path where you installed anaconda.
