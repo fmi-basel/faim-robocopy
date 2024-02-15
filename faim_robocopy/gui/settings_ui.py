@@ -120,7 +120,7 @@ class SettingsUi(Toplevel):
         self.tabcontrol = Notebook(self)
 
         for section_key in (key for key in self.settings.keys()
-                            if key is not 'DEFAULT'):
+                            if key != 'DEFAULT'):
 
             # create new tabs for each setting.
             section_key_name = SECTION_NAMES.get(section_key, None)

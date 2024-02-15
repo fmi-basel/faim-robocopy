@@ -14,8 +14,6 @@ from tkinter import messagebox
 
 from threading import Thread
 
-import psutil
-
 from faim_robocopy import __version__
 from ..plugin_loader import collect_plugins
 from ..plugin_loader import is_activated_plugin

@@ -1,2 +1,2 @@
-from .gui import RobocopyGUI
-from .gui import get_window_name
+from .gui import RobocopyGUI  # noqa: F401
+from .gui import get_window_name  # noqa: F401
