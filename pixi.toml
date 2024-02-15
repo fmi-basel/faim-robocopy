@@ -1,0 +1,24 @@
+[project]
+name = "faim-robocopy"
+version = "1.5.0"
+description = "A python-based UI for robocopy"
+authors = [
+    "Jan Eglinger <jan.eglinger@fmi.ch>",
+    "Tim-Oliver Buchholz <tim-oliver.buchholz@fmi.ch>",
+    "Markus Rempfler <markus.rempfler@fmi.ch>"
+]
+channels = ["conda-forge"]
+platforms = ["win-64"]
+
+[tasks]
+faim-robocopy = 'python .\FAIM-robocopy.pyw'
+
+[dependencies]
+git = ">=2.43.0,<2.44"
+python = "3.11.*"
+gitpython = ">=3.1.41,<3.2"
+psutil = ">=5.9.8,<5.10"
+tk = ">=8.6.13,<8.7"
+
+[target.win-64.activation]
+scripts = ["env_setup.bat"]
