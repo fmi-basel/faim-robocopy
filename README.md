@@ -5,7 +5,25 @@ FAIM Robocopy provides a user interface for the windows tool
 
 ## Installation
 
-Requirements: ```python 3.6```, ```git```. We recommend installing
+### Using pixi
+
+Provided [`pixi`](https://pixi.sh/) is installed on the host system,
+clone this repository into a local directory:
+
+```
+git clone https://github.com/fmi-basel/faim-robocopy
+```
+
+Then start the `faim-robocopy` task:
+
+```
+cd faim-robocopy
+pixi run faim-robocopy
+```
+
+### Using conda/mamba/anaconda
+
+Requirements: ```python```, ```git```. We recommend installing
 [Anaconda](https://repo.continuum.io/) and will use it in this
 installation guide.
 

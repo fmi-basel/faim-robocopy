@@ -9,6 +9,7 @@ import psutil
 from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor
 from collections import namedtuple
+from subprocess import TimeoutExpired
 from threading import Lock
 
 from faim_robocopy.utils import is_filetree_a_subset_of
