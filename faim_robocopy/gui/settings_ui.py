@@ -1,27 +1,25 @@
 from collections import namedtuple
-
-from tkinter import Toplevel
-from tkinter import Frame
-from tkinter import Entry
-from tkinter import Label
-from tkinter import Button
-from tkinter import Checkbutton
-from tkinter import StringVar
-from tkinter import BooleanVar
-from tkinter import DoubleVar
-from tkinter import messagebox
-from tkinter import TclError
+from tkinter import (
+    BooleanVar,
+    Button,
+    Checkbutton,
+    DoubleVar,
+    Entry,
+    Frame,
+    Label,
+    StringVar,
+    TclError,
+    Toplevel,
+    messagebox,
+)
 from tkinter.ttk import Notebook
 
-from .defaults import PAD
-from .defaults import BORDERWIDTH
+from ..robocopy import build_robocopy_command
+from ..settings import read_custom_settings, write_custom_settings
 from .about import AboutFrame
+from .defaults import BORDERWIDTH, PAD
 from .tooltip import ToolTip
 from .wrapping_label import WrappingLabel
-
-from ..settings import read_custom_settings
-from ..settings import write_custom_settings
-from ..robocopy import build_robocopy_command
 
 SettingsItem = namedtuple('SettingsItem',
                           ['label_text', 'variable_type', 'tooltip'])
@@ -248,8 +246,7 @@ class SettingsUi(Toplevel):
             except TclError as err:
                 self.settings[section_key][key] = str(previous)
                 messagebox.showerror(
-                    'Error', 'Could not save setting for {}: {}'.format(
-                        SETTING_NAMES[section_key][key].label_text, str(err)))
+                    'Error', f'Could not save setting for {SETTING_NAMES[section_key][key].label_text}: {err!s}')
                 return
 
         write_custom_settings(self.settings)

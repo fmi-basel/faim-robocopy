@@ -2,9 +2,7 @@ import configparser
 import logging
 import os
 
-from .utils import PROJECT_ROOT
-from .utils import get_user_dir
-from .utils import get_homeshare
+from .utils import PROJECT_ROOT, get_homeshare, get_user_dir
 
 DEFAULT_SETTINGS = os.path.join(PROJECT_ROOT, '.faimrobocopy_default.ini')
 

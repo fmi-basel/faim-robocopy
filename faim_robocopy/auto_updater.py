@@ -1,11 +1,9 @@
 import logging
-import sys
 import os
 import re
+import sys
 
-from git import Repo
-from git import InvalidGitRepositoryError
-from git import GitCommandError
+from git import GitCommandError, InvalidGitRepositoryError, Repo
 
 from .utils import PROJECT_ROOT
 
@@ -73,7 +71,7 @@ def auto_update_from_git(repo_path, remote='origin', branch=None):
     if re.search('Updating', retval) and (re.search('file.changed', retval) or
                                           re.search('files.changed', retval)):
         return True
-    raise UnknownPullReturnCodeError('git pull returned {}'.format(retval))
+    raise UnknownPullReturnCodeError(f'git pull returned {retval}')
 
 
 def restart():

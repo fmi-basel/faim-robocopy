@@ -1,6 +1,5 @@
-from faim_robocopy.utils import is_filetree_a_subset_of
-from faim_robocopy.utils import count_identical_files
-from faim_robocopy.file_filter import create_file_filter, NoFilter
+from faim_robocopy.file_filter import NoFilter, create_file_filter
+from faim_robocopy.utils import count_identical_files, is_filetree_a_subset_of
 
 
 def test_no_filter():
@@ -77,7 +76,7 @@ def test_compare(tmpdir):
         ],
     }
 
-    for folder in files_in.keys():
+    for folder in files_in:
         for filename in files_in[folder]:
             filehandle = folder.join(filename)
             filehandle.write(filename)
@@ -89,8 +88,8 @@ def test_compare(tmpdir):
         'some_other_subdir': ['d.txt', 'e.tiff']
     }
 
-    for folder in files_in.keys():
-        for subfolder in subfolder_files.keys():
+    for folder in files_in:
+        for subfolder in subfolder_files:
             subfolder_h = folder.mkdir(subfolder)
             for filename in subfolder_files[subfolder]:
                 filehandle = subfolder_h.join(filename)
@@ -134,7 +133,7 @@ def test_count_identical(tmpdir):
     }
 
     # create stuff
-    for folder in files_in.keys():
+    for folder in files_in:
         for filename in files_in[folder]:
             filehandle = folder.join(filename)
             filehandle.write(filename)
