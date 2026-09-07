@@ -32,11 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 '''
 
-from tkinter.scrolledtext import ScrolledText
-import tkinter as tk
-
 import logging
 import queue
+import tkinter as tk
+from tkinter.scrolledtext import ScrolledText
 
 
 class QueueHandler(logging.Handler):
@@ -50,7 +49,7 @@ class QueueHandler(logging.Handler):
     def __init__(self, log_queue):
         '''
         '''
-        super(QueueHandler, self).__init__()
+        super().__init__()
         self.log_queue = log_queue
 
     def emit(self, record):

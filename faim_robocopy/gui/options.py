@@ -1,14 +1,6 @@
-from tkinter import LabelFrame
-from tkinter import Label
-from tkinter import Checkbutton
-from tkinter import Entry
-
+from tkinter import BOTH, LEFT, RAISED, TOP, Checkbutton, Entry, Label, LabelFrame
 from tkinter import W as TK_W_ANCHOR
 from tkinter import X as TK_X
-from tkinter import RAISED
-from tkinter import LEFT
-from tkinter import BOTH
-from tkinter import TOP
 
 from .defaults import PAD
 from .tooltip import ToolTip

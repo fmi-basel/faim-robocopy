@@ -1,6 +1,4 @@
-from tkinter import StringVar
-from tkinter import DoubleVar
-from tkinter import IntVar
+from tkinter import DoubleVar, IntVar, StringVar
 
 
 class SharedResources:

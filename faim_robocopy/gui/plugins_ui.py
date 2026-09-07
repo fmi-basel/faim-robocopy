@@ -1,13 +1,8 @@
-from tkinter import LabelFrame
-from tkinter import Checkbutton
-from tkinter import Button
-from tkinter import RAISED
-from tkinter import TOP
-from tkinter import BOTH
+from tkinter import BOTH, RAISED, TOP, Button, Checkbutton, LabelFrame
 from tkinter import W as TK_W_ANCHOR
 
-from .defaults import PAD
 from ..plugin_loader import is_activated_plugin
+from .defaults import PAD
 from .tooltip import ToolTip
 
 

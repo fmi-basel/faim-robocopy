@@ -1,41 +1,39 @@
-import os
 import logging
-
-from tkinter import Tk
-from tkinter import Frame
-from tkinter import PanedWindow
-from tkinter import Button
-from tkinter import LEFT
-from tkinter import BOTH
-from tkinter import TOP
-from tkinter import RIDGE
-from tkinter import HORIZONTAL, VERTICAL
-from tkinter import messagebox
-
+import os
 from threading import Thread
+from tkinter import (
+    BOTH,
+    HORIZONTAL,
+    LEFT,
+    RIDGE,
+    TOP,
+    VERTICAL,
+    Button,
+    Frame,
+    PanedWindow,
+    Tk,
+    messagebox,
+)
 
 from faim_robocopy import __version__
-from ..plugin_loader import collect_plugins
-from ..plugin_loader import is_activated_plugin
-from ..plugin_loader import initialize_plugin
 
-from ..utils import get_user_info
-from ..robocopy import RobocopyTask
 from ..notifier import MailNotifier
-from ..params import read_params, dump_params
-
-from .defaults import PAD, BORDERWIDTH
+from ..params import dump_params, read_params
+from ..plugin_loader import collect_plugins, initialize_plugin, is_activated_plugin
+from ..robocopy import RobocopyTask
+from ..utils import get_user_info
 from .callback_decorator import decorate_callback
-from .shared_resources import SharedResources
+from .console import ConsoleUi
+from .defaults import BORDERWIDTH, PAD
 from .folder_selection import FolderSelectionUi
 from .options import OptionsSelectionUi
-from .console import ConsoleUi
-from .settings_ui import SettingsUi
 from .plugins_ui import PluginsUi
+from .settings_ui import SettingsUi
+from .shared_resources import SharedResources
 
 
 def get_window_name():
-    return 'Robocopy FAIM - v{}'.format(__version__)
+    return f'Robocopy FAIM - v{__version__}'
 
 
 def error_message(message):

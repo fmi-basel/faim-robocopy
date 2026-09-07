@@ -1,9 +1,8 @@
+import functools
 import importlib
 import logging
 import os
-import functools
 from glob import glob
-
 from tkinter import BooleanVar
 
 from .utils import PROJECT_ROOT
@@ -97,7 +96,7 @@ def collect_plugins():
 
     if plugins:
         logging.getLogger(__name__).debug(
-            'Loaded %d plugins: ' + ','.join(key for key in plugins.keys()),
+            'Loaded %d plugins: ' + ','.join(key for key in plugins),
             len(plugins))
     else:
         logging.getLogger(__name__).debug('Could not find any plugins')
