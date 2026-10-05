@@ -13,13 +13,11 @@ class BaseNotifier(metaclass=abc.ABCMeta):
     def failed(self):
         '''notify failure.
         '''
-        pass
 
     @abc.abstractmethod
     def finished(self, source, destinations):
         '''notify finish.
         '''
-        pass
 
 
 class MailNotifier(BaseNotifier):
@@ -46,9 +44,8 @@ class MailNotifier(BaseNotifier):
                 send_mail(
                     self.user_mail, 'Robocopy Info: ERROR',
                     str(error) + '\n\n'
-                    'Please check the logfile in {} for further information.\n'
-                    'Note that further errors will not be reported by mail.'.
-                    format(self.logfile), **self.smtp_kwargs)
+                    f'Please check the logfile in {self.logfile} for further information.\n'
+                    'Note that further errors will not be reported by mail.', **self.smtp_kwargs)
 
             self.fail_count += 1
 
@@ -57,12 +54,12 @@ class MailNotifier(BaseNotifier):
         '''
         # yapf: disable
         send_mail(self.user_mail, self._get_finish_headline(),
-                  'The robocopy task on host {} '.format(get_hostname()) +
-                  'with source:\n  {}\n'.format(source) +
+                  f'The robocopy task on host {get_hostname()} ' +
+                  f'with source:\n  {source}\n' +
                   'and destination{}:\n  '.format('s' if len(destinations) >= 2 else '') +
                   '\n  '.join(destinations) +
                   '\nfinished.\n' +
-                  'Please check summary in {}'.format(self.logfile),
+                  f'Please check summary in {self.logfile}',
                   **self.smtp_kwargs)
         # yapf: enable
 
@@ -75,4 +72,4 @@ class MailNotifier(BaseNotifier):
         if self.fail_count == 0:
             return base + ' successfully'
 
-        return base + ' with {} errors'.format(self.fail_count)
+        return base + f' with {self.fail_count} errors'

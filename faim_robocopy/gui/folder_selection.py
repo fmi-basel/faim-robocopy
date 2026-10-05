@@ -1,13 +1,6 @@
-from tkinter import LabelFrame
-from tkinter import Label
-from tkinter import Button
-from tkinter.filedialog import askdirectory
-
+from tkinter import BOTH, RAISED, SUNKEN, TOP, Button, Label, LabelFrame
 from tkinter import W as TK_W_ANCHOR
-from tkinter import RAISED
-from tkinter import SUNKEN
-from tkinter import BOTH
-from tkinter import TOP
+from tkinter.filedialog import askdirectory
 
 from .defaults import PAD
 
