@@ -1,6 +1,4 @@
-from tkinter import Toplevel
-from tkinter import Label
-from tkinter import TclError
+from tkinter import Label, TclError, Toplevel
 
 
 class ToolTip:

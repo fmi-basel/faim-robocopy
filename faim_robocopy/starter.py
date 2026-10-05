@@ -1,20 +1,13 @@
 import logging
 import os
-
 from threading import Thread
 from tkinter import Tk
 
-from .settings import read_custom_settings
 from .auto_updater import run_updater_bg
-
-from .gui import RobocopyGUI
-from .gui import get_window_name
+from .file_logger import LOGFILENAME_FMT, _get_logpath, add_logging_to_file
+from .gui import RobocopyGUI, get_window_name
 from .gui.updater import run_updater_ui
-
-from .file_logger import _get_logpath
-from .file_logger import add_logging_to_file
-from .file_logger import LOGFILENAME_FMT
-
+from .settings import read_custom_settings
 from .utils import delete_files_older_than
 
 

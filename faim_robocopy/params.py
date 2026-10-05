@@ -1,5 +1,5 @@
-import os
 import logging
+import os
 
 PARAM_FNAME = 'param.txt'
 

@@ -1,22 +1,24 @@
-import logging
-import subprocess
-import os
 import datetime
-import time
+import logging
+import os
 import re
-import psutil
-
-from contextlib import contextmanager
-from concurrent.futures import ThreadPoolExecutor
+import subprocess
+import time
 from collections import namedtuple
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from subprocess import TimeoutExpired
 from threading import Lock
 
-from faim_robocopy.utils import is_filetree_a_subset_of
-from faim_robocopy.utils import delete_existing
-from faim_robocopy.utils import count_files_in_subtree
-from faim_robocopy.utils import count_identical_files
+import psutil
+
 from faim_robocopy.file_filter import create_file_filter
+from faim_robocopy.utils import (
+    count_files_in_subtree,
+    count_identical_files,
+    delete_existing,
+    is_filetree_a_subset_of,
+)
 
 
 def _sanitize_destinations(destinations):
@@ -388,7 +390,7 @@ class RobocopyTask:
                         break
 
         # Report files in both folders.
-        logger.warn('Collecting summary of previous robocopy run... '
+        logger.warning('Collecting summary of previous robocopy run... '
                     '(this may take up to a few minutes if there are '
                     'a thousands of files in source/destination)')
         _report(source, destinations, file_filter, n_deleted)

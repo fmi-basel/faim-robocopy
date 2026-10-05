@@ -1,8 +1,8 @@
-from tkinter import Frame
-from tkinter import Label
+from tkinter import Frame, Label
+
+from faim_robocopy import __version__
 
 from .defaults import PAD
-from faim_robocopy import __version__
 
 TITLE = 'FAIM-Robocopy'
 ABOUT_TEXT = [
