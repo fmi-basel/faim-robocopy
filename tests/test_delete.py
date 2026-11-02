@@ -1,8 +1,7 @@
 import os
 
-from faim_robocopy.utils import delete_existing
-from faim_robocopy.utils import delete_files_older_than
 from faim_robocopy.file_filter import create_file_filter
+from faim_robocopy.utils import delete_existing, delete_files_older_than
 
 
 def test_delete_duplicates(tmpdir):
@@ -27,7 +26,7 @@ def test_delete_duplicates(tmpdir):
     }
 
     # create files
-    for folder in files_in.keys():
+    for folder in files_in:
         for filename in files_in[folder]:
             filehandle = folder.join(filename)
             filehandle.write(filename)
@@ -112,7 +111,7 @@ def test_delete_duplicates_with_ignore_filter(tmpdir):
         dest2: ['a.txt', 'b.ini', 'thing.txt']
     }
 
-    for folder in files_in.keys():
+    for folder in files_in:
         for filename in files_in[folder]:
             filehandle = folder.join(filename)
             filehandle.write(filename)

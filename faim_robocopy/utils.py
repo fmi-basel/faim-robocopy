@@ -1,12 +1,11 @@
 import ctypes
-import os
-import socket
-import re
+import filecmp
 import getpass
 import logging
-import filecmp
+import os
+import re
+import socket
 import time
-
 from glob import glob
 
 from .file_filter import NoFilter
@@ -165,8 +164,8 @@ def delete_existing(source, destinations, file_filter=NoFilter):
         '''
         path = _sanitize_for_substitute(path)
         try:
-            return all((filecmp.cmp(path, re.sub(source, dest, path))
-                        for dest in destinations))
+            return all(filecmp.cmp(path, re.sub(source, dest, path))
+                        for dest in destinations)
         except FileNotFoundError:  # one of the files doesnt exist.
             return False
         except OSError:  # one of the files couldnt be accessed.
@@ -203,8 +202,8 @@ def delete_existing(source, destinations, file_filter=NoFilter):
         if not sub_dirs and not files and not current_dir == source:
 
             # only delete empty folders that exist in both destinations
-            if all((os.path.exists(re.sub(source, dest, current_dir))
-                    for dest in destinations)):
+            if all(os.path.exists(re.sub(source, dest, current_dir))
+                    for dest in destinations):
                 os.rmdir(current_dir)
 
     logger.info('Deleted %d fully copied files from source.', n_deleted)
@@ -270,9 +269,7 @@ def guess_user_mail(domain='fmi.ch'):
     except Exception:
         first, last = 'Firstname', 'Lastname'
 
-    return '{first}.{last}@{domain}'.format(first=first,
-                                            last=last,
-                                            domain=domain)
+    return f'{first}.{last}@{domain}'
 
 
 def get_user_info():

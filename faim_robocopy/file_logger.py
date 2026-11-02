@@ -1,6 +1,6 @@
-import os
 import datetime
 import logging
+import os
 
 LOGFILENAME_FMT = 'Robocopy_Logfile_{}.html'
 
@@ -48,7 +48,7 @@ def _get_logpath():
                                                     'faim-robocopy-logs')
             return os.path.join(logdir, logfilename)
 
-    raise IOError('Could not determine logfile path.')
+    raise OSError('Could not determine logfile path.')
 
 
 def add_logging_to_file(filename):
