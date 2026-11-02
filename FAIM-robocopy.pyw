@@ -1,7 +1,5 @@
 import argparse
-
 import logging
-import os
 
 from faim_robocopy.starter import run_robocopy_gui
 

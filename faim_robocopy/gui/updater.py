@@ -1,21 +1,14 @@
 import logging
+from tkinter import RAISED, Button, Frame, LabelFrame, Message, StringVar, Tk
 
-from tkinter import Frame
-from tkinter import Message
-from tkinter import LabelFrame
-from tkinter import Button
-from tkinter import StringVar
-from tkinter import Tk
-from tkinter import RAISED
-
+from faim_robocopy.auto_updater import (
+    InvalidGitRepositoryError,
+    UpdateExceptions,
+    auto_update_from_git,
+    restart,
+)
+from faim_robocopy.gui.defaults import BORDERWIDTH, BUTTONWIDTH, PAD
 from faim_robocopy.utils import PROJECT_ROOT
-from faim_robocopy.auto_updater import UpdateExceptions
-from faim_robocopy.auto_updater import InvalidGitRepositoryError
-from faim_robocopy.auto_updater import auto_update_from_git
-from faim_robocopy.auto_updater import restart
-from faim_robocopy.gui.defaults import PAD
-from faim_robocopy.gui.defaults import BORDERWIDTH
-from faim_robocopy.gui.defaults import BUTTONWIDTH
 
 MINWIDTH = 320
 MINHEIGHT = 100
@@ -47,7 +40,6 @@ class UpdaterWindow(Frame):
                                  relief=RAISED)
         label_frame.pack(fill='both', expand=True)
 
-        #
         self.parent = parent
         self.logger = logging.getLogger(__name__)
 
